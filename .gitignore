@@ -4,3 +4,4 @@ data/
 config.json
 *.log
 assets/musik/*.wav
+branding/*.mp4

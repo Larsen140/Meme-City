@@ -104,6 +104,19 @@ app.post('/api/rebuild', (req, res) => {
   for (const p of Object.values(store.players)) if (p.plot !== null) builder.enqueue({ type: 'build', player: p, instant: true });
   res.json({ ok: true });
 });
+// Kameraflug fuers TikTok-Video (Antwort kommt, wenn der Flug fertig ist, mit Start-/Endzeit)
+app.post('/api/showcase', (req, res) => {
+  const shots = req.body.shots || [];
+  builder.enqueue({ type: 'fn', fn: async () => {
+    const startedAt = Date.now();
+    for (const s of shots) {
+      if (s.firework) builder.fireworkShow(0, 0, 14, 14);
+      await builder.camera(s.x, s.y, s.z, s.lx, s.ly, s.lz, s.sec);
+      if (s.hold) await new Promise((r) => setTimeout(r, s.hold * 1000));
+    }
+    res.json({ startedAt, endedAt: Date.now() });
+  } });
+});
 app.get('/api/state', (req, res) => res.json({ ...game.state(), tiktok: tiktok.status, minecraft: mc.connected }));
 app.get('/api/player/:name', (req, res) => {
   const p = store.players[req.params.name.toLowerCase().replace(/^@/, '')];

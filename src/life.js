@@ -57,6 +57,9 @@ const BALLOONS = [
   { r: 70, h: 42, speed: 0.012, c1: 'red', c2: 'yellow', a: 0 },
   { r: 55, h: 50, speed: -0.009, c1: 'light_blue', c2: 'white', a: 2.1 },
   { r: 85, h: 46, speed: 0.008, c1: 'lime', c2: 'purple', a: 4.2 },
+  { r: 40, h: 56, speed: 0.014, c1: 'orange', c2: 'white', a: 1.0 },
+  { r: 78, h: 38, speed: -0.011, c1: 'pink', c2: 'magenta', a: 3.2 },
+  { r: 62, h: 60, speed: 0.007, c1: 'blue', c2: 'yellow', a: 5.3 },
 ];
 
 export class CityLife {
