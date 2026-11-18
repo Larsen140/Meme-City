@@ -66,10 +66,11 @@ export class GiftFx {
       || (coins >= 1000 ? 'mega' : coins >= 100 ? 'heart' : coins >= 30 ? 'donut' : coins >= 5 ? 'sparkle' : 'rose');
     if (p.plot === null) return;
 
-    // Kleine Geschenke: Effekt am Haus ohne Kameraflug (sonst springt die Kamera bei jeder Rose)
-    if (coins < 5) return this.effect(kind, p);
-    // Groessere: Kamera fliegt hin und dann der Effekt (nicht doppelt anstellen)
+    // Jedes Geschenk soll man sehen: Kamera fliegt zum Haus, dann der Effekt.
+    // Schickt dieselbe Person schnell mehrere, wird nur einmal hingeflogen.
     if (this.builder.queue.some((j) => j.giftFor === p.id)) return;
+    // Bei sehr vielen Auftraegen gleichzeitig kleine Geschenke ohne Flug zeigen
+    if (coins < 5 && this.builder.queue.length > 4) return this.effect(kind, p);
     this.builder.enqueue({ type: 'camera', player: p, giftFor: p.id });
     this.builder.enqueue({ type: 'fn', giftFor: p.id, fn: () => this.effect(kind, p, true) });
   }
@@ -78,10 +79,18 @@ export class GiftFx {
     const mc = this.mc, { x, z, top, fr } = this.houseSpot(p);
     const y = top + 3;
     if (kind === 'rose') {
-      await mc.send(`particle minecraft:heart ${x} ${y} ${z} 2 1 2 0 8 force`);
-      // eine Blume waechst im Garten
-      const fx = x + Math.round((Math.random() - 0.5) * 10), fz = z + Math.round((Math.random() - 0.5) * 10);
-      await mc.send(`setblock ${fx} ${BASE} ${fz} poppy keep`);
+      // Herzen-Fontaene ueber dem Haus und neue Rosen im Garten
+      for (let i = 0; i < 4; i++) {
+        await mc.send(`particle minecraft:heart ${x} ${y + i} ${z} 2.5 0.8 2.5 0 14 force`);
+        await mc.send(`particle minecraft:dust{color:[1.0,0.1,0.25],scale:1.6} ${x} ${y + i} ${z} 2 1 2 0 40 force`);
+        await sleep(220);
+      }
+      for (let i = 0; i < 3; i++) {
+        const fx = x + Math.round((Math.random() - 0.5) * 10), fz = z + Math.round((Math.random() - 0.5) * 10);
+        await mc.send(`setblock ${fx} ${BASE} ${fz} poppy keep`);
+        await mc.send(`particle minecraft:happy_villager ${fx} ${BASE + 0.5} ${fz} 0.3 0.3 0.3 0 6 force`);
+      }
+      await mc.send(`playsound minecraft:entity.experience_orb.pickup master @a ${x} ${BASE} ${z} 2 1.2`);
       await mc.send(`playsound minecraft:block.azalea.place master @a ${x} ${BASE} ${z} 1 1.4`);
     } else if (kind === 'sparkle') {
       await mc.send(`particle minecraft:note ${x} ${y} ${z} 3 1.5 3 1 25 force`);
