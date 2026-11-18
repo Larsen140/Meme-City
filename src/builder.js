@@ -42,10 +42,12 @@ export class Builder {
   enqueue(job) {
     // Doppelte Bau-Auftraege fuer dasselbe Grundstueck zusammenfassen
     if (job.type === 'build' && this.queue.some((j) => j.type === 'build' && j.player.id === job.player.id)) return;
-    // Kamera-Wuensche nicht stapeln
-    if (job.type === 'camera' && this.queue.filter((j) => j.type === 'camera').length >= 3) return;
+    // Kamera-Wuensche nicht stapeln: pro Person nur einer, insgesamt hoechstens 6
+    if (job.type === 'camera' && this.queue.some((j) => j.type === 'camera' && j.player?.id === job.player?.id)) return true;
+    if (job.type === 'camera' && this.queue.filter((j) => j.type === 'camera').length >= 6) return false;
     this.queue.push(job);
     this.run();
+    return true;
   }
 
   async run() {

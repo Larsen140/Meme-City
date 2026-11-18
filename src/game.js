@@ -1,3 +1,4 @@
+import fs from 'fs';
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
 import { COMMUNITY_PROJECTS, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
@@ -237,9 +238,13 @@ export class Game {
 
   // ---------- Ereignisse von TikTok (oder vom Testpanel) ----------
 
+  /** Sofort sichtbare Rueckmeldung im Overlay (der Buergermeister kann nicht jedem laut antworten) */
+  ack(p, text) { this.broadcast({ type: 'ack', name: p.name, avatar: p.avatar, text }); }
+
   onChat(user, text) {
     const p = this.player(user);
     if (!p) return;
+    if (!this._fixing) { try { fs.appendFileSync('data/chat.log', `${new Date().toISOString().slice(0, 19).replace('T', ' ')} @${p.name}: ${text.replace(/\n/g, ' ')}\n`); } catch {} }
     if (this.action?.onChat(p, text)) { this.store.save(); return; }
     // Vertippter Befehl ("hause", "frabe rot", "zieg mein haus"): verstehen, ausfuehren und kurz erklaeren
     const fx = !this._fixing && fixCommand(text);
@@ -255,8 +260,11 @@ export class Game {
     if (/(zeig|wo ist|wo steht|show)/.test(t) && /(haus|house)/.test(t)) {
       if (p.plot === null) {
         this.speech.say(`${spoken(p)}, du hast noch kein Haus. Schreib einfach Haus in den Chat!`);
+        this.ack(p, '🏠 Noch kein Haus – schreib **Haus**');
+      } else if (this.builder.enqueue({ type: 'camera', player: p }) === false) {
+        this.ack(p, '📷 Gerade viel los – gleich nochmal schreiben!');
       } else {
-        this.builder.enqueue({ type: 'camera', player: p });
+        this.ack(p, '📷 Kamera fliegt gleich zu deinem Haus');
         this.speech.say(pick([`Kamera ab! Hier wohnt ${spoken(p)}.`, `Bitte schön, das Haus von ${spoken(p)}.`, `Wir fliegen zu ${spoken(p)}!`]));
       }
     } else if (isQuestion(t) && !/^(haus|house)\b/.test(t)) {
@@ -264,6 +272,7 @@ export class Game {
     } else if (/\b(haus|house)\b/.test(t)) {
       if (!this.claimHouse(p, 'chat')) {
         this.broadcast({ type: 'player', card: this.card(p) });
+        this.ack(p, `🏠 Du wohnst schon hier – Stufe ${p.level}`);
         if (this.chatReplyReady(p, 20_000)) this.speech.say(pick([`${spoken(p)}, du wohnst schon in Meme City! Schreib zeig mein Haus.`, `${spoken(p)}, dein ${levelInfo(p.level).name} steht schon!`]));
       }
     } else {
@@ -292,7 +301,7 @@ export class Game {
     // Fragen zur Stadt und zu den Funktionen beantworten (Vorrang vor allem anderen)
     if (isQuestion(t)) {
       const a = answer(this, p, t, n);
-      if (a) { if (this.chatReplyReady(p, 15_000)) { this.log(`[Frage] @${p.name}: ${text}`); this.speech.say(a, true); } return; }
+      if (a) { this.log(`[Frage] @${p.name}: ${text}`); if (this.chatReplyReady(p, 15_000)) this.speech.say(a, true); else this.ack(p, '💬 ' + a.replace(/^[^,]{1,30}, /, '')); return; }
     }
     let line = null;
     if (/\b(hi|hallo|hey|moin|servus|hello|huhu|na|guten (tag|abend|morgen)|grüß|gruss|yo)\b/.test(t)) {

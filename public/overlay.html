@@ -374,6 +374,16 @@
   #banner { top: 760px !important; }
   #ticker { height: 80px !important; bottom: 36px !important; } #ticker .lab { font-size: 28px !important; } #ticker .run { font-size: 34px !important; }
   #tickbox { left: 130px !important; }
+  /* Sofort-Rueckmeldung auf Chat-Befehle */
+  #acks { position: absolute; left: 22px; top: 1080px; width: 760px; display: flex; flex-direction: column; gap: 8px; pointer-events: none; }
+  .ack { display: flex; align-items: center; gap: 12px; padding: 8px 18px 8px 8px; border-radius: 40px; background: rgba(14,11,34,.92); border: 2px solid rgba(61,245,176,.6);
+    font-size: 26px; font-weight: 700; line-height: 1.15; animation: ackIn .3s cubic-bezier(.2,1.4,.4,1); transition: opacity .4s, transform .4s; }
+  .ack.out { opacity: 0; transform: translateX(-30px); }
+  .ack img, .ack .ava { width: 46px; height: 46px; border-radius: 50%; object-fit: cover; background: #3b3570; flex: none; border: 2px solid #fff; }
+  .ack .who { color: #7ff7cf; font-weight: 800; white-space: nowrap; max-width: 230px; overflow: hidden; text-overflow: ellipsis; flex: none; }
+  .ack .tx { min-width: 0; }
+  .ack .tx b { color: #ffd84d; }
+  @keyframes ackIn { 0% { opacity: 0; transform: translateX(-40px); } 100% { opacity: 1; transform: none; } }
 </style>
 </head>
 <body>
@@ -409,6 +419,7 @@
 <div id="almost"></div>
 <div id="levelup"><div class="burst"></div><div class="lv-card"><div class="lv-top"></div><div class="lv-num"></div><div class="lv-name"></div><div class="lv-who"></div></div></div>
 
+<div id="acks"></div>
 <div id="player" class="panel"></div>
 <div id="likestats" class="panel"></div>
 <div id="help" class="panel"></div>
@@ -682,6 +693,17 @@ function nextTicker() {
 }
 nextTicker();
 
+// ---------- Sofort-Rueckmeldung ----------
+function showAck(a) {
+  const box = $('acks');
+  const d = document.createElement('div');
+  d.className = 'ack';
+  d.innerHTML = `${ava(a.avatar)}<span class="who">@${esc(a.name)}</span><span class="tx">${esc(a.text).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')}</span>`;
+  box.appendChild(d);
+  while (box.children.length > 3) box.firstChild.remove();
+  setTimeout(() => { d.classList.add('out'); setTimeout(() => d.remove(), 450); }, 7000);
+}
+
 // ---------- Buergermeister ----------
 let mouthTimer, poseTimer;
 function talk(on, text, silent) {
@@ -845,6 +867,7 @@ function connect() {
     else if (m.type === 'duel') showDuel(m);
     else if (m.type === 'raffle') showRaffle(m);
     else if (m.type === 'vote') showVote(m);
+    else if (m.type === 'ack') showAck(m);
     else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);

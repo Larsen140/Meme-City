@@ -152,6 +152,7 @@ export class Action {
         const first = !this.vote.votes.has(p.id);
         this.vote.votes.set(p.id, i);
         if (first) this.broadcast({ type: 'ticker', text: `🗳️ @${p.name} stimmt für **${this.vote.options[i]}**` });
+        this.game.ack(p, `🗳️ Deine Stimme: **${this.vote.options[i]}**`);
         return true;
       }
     }
@@ -160,6 +161,7 @@ export class Action {
       const team = m[1].startsWith('n') ? 'nord' : 'sued';
       this.teams.set(p.id, team);
       this.broadcast({ type: 'ticker', text: `@${p.name} kämpft für ${team === 'nord' ? 'NORD 🔵' : 'SÜD 🔴'}!` });
+      this.game.ack(p, team === 'nord' ? '🔵 Du bist im Team **NORD**' : '🔴 Du bist im Team **SÜD**');
       if (this.ready('teamtalk', 15_000)) this.speech.say(`${spoken(p)} ist im Team ${team === 'nord' ? 'Nord' : 'Süd'}!`);
       return true;
     }
@@ -492,13 +494,15 @@ export class Action {
 
   cmdColor(p, word) {
     const c = COLORS[word.replace(/[^a-zäöüß]/g, '')];
-    if (p.plot === null) return this.speech.say(`${spoken(p)}, du brauchst zuerst ein Haus. Schreib Haus!`);
+    if (p.plot === null) { this.game.ack(p, '🏠 Erst ein Haus – schreib **Haus**'); return this.speech.say(`${spoken(p)}, du brauchst zuerst ein Haus. Schreib Haus!`); }
     if (!c) {
       this.broadcast({ type: 'ticker', text: `🎨 Farben: ${Object.keys(COLORS).filter((k) => !/ue|ss/.test(k)).join(', ')}` });
+      this.game.ack(p, '🎨 Farbe unbekannt – z. B. **farbe rot**, **farbe hellblau**');
       if (this.game.chatReplyReady(p, 20_000)) this.speech.say(`${spoken(p)}, die Farbe kenne ich nicht. Schreib zum Beispiel farbe rot, farbe hellblau oder farbe lila!`);
       return;
     }
-    if (!this.ready('farbe:' + p.id, 60_000)) return this.waitHint(p);
+    if (!this.ready('farbe:' + p.id, 60_000)) return this.waitHint(p, 'Farbe');
+    this.game.ack(p, `🎨 Dach wird **${word}** gestrichen`);
     p.color = c;
     this.game.store.save();
     this.speech.say(pick([`${spoken(p)} streicht das Dach in ${word}!`, `Neue Farbe für ${spoken(p)}: ${word}!`]));
@@ -508,13 +512,15 @@ export class Action {
 
   cmdPet(p, word) {
     const pet = findPet(word);
-    if (p.plot === null) return this.speech.say(`${spoken(p)}, dein Haustier braucht ein Zuhause. Schreib zuerst Haus!`);
+    if (p.plot === null) { this.game.ack(p, '🏠 Erst ein Haus – schreib **Haus**'); return this.speech.say(`${spoken(p)}, dein Haustier braucht ein Zuhause. Schreib zuerst Haus!`); }
     if (!pet) {
       this.broadcast({ type: 'ticker', text: `🐾 Haustiere: ${[...new Set(Object.values(PETS).map((v) => v[1]))].join(', ')}` });
+      this.game.ack(p, '🐾 Tier unbekannt – z. B. **haustier katze**, **haustier pinguin**');
       if (this.game.chatReplyReady(p, 20_000)) this.speech.say(`${spoken(p)}, ${word ? 'das Tier haben wir leider nicht' : 'welches Tier willst du'}. Schreib zum Beispiel haustier katze, haustier pinguin oder haustier panda!`);
       return;
     }
-    if (!this.ready('pet:' + p.id, 60_000)) return this.waitHint(p);
+    if (!this.ready('pet:' + p.id, 60_000)) return this.waitHint(p, 'Haustier');
+    this.game.ack(p, `🐾 **${pet[1]}** zieht gleich bei dir ein`);
     const { x: cx, z: cz } = plotCenter(p.plot);
     // im Vorgarten (Seite zur Kamera) neben dem Weg – dort sieht man es immer
     const fr = frontOf(cx, cz);
@@ -539,13 +545,17 @@ export class Action {
   }
 
   /** Freundlicher Hinweis, wenn jemand einen Befehl zu schnell wiederholt */
-  waitHint(p) {
+  waitHint(p, what = 'Das') {
+    this.game.ack(p, `⏳ ${what} geht in einer Minute wieder`);
     if (this.game.chatReplyReady(p, 30_000)) this.speech.say(pick([`${spoken(p)}, kurz durchatmen! In einer Minute geht das wieder.`, `Moment, ${spoken(p)}, ich bin gleich wieder für dich da!`]));
   }
 
   cmdParty(p) {
-    if (p.plot === null) return this.speech.say(`${spoken(p)}, ohne Haus keine Party! Schreib Haus!`);
-    if (!this.ready('party:' + p.id, 120_000) || !this.ready('party', 20_000)) return;
+    if (p.plot === null) { this.game.ack(p, '🏠 Erst ein Haus – schreib **Haus**'); return this.speech.say(`${spoken(p)}, ohne Haus keine Party! Schreib Haus!`); }
+    if (Date.now() - (this.cooldown.get('party') || 0) < 20_000) return this.game.ack(p, '🎉 Gerade läuft eine Party – gleich nochmal!');
+    if (!this.ready('party:' + p.id, 120_000)) return this.waitHint(p, 'Party');
+    this.ready('party', 20_000);
+    this.game.ack(p, '🎉 Party bei dir startet gleich');
     const { x, z } = plotCenter(p.plot);
     this.speech.say(pick([`Party bei ${spoken(p)}! Alle hin da!`, `${spoken(p)} schmeißt eine Party!`]));
     this.builder.enqueue({ type: 'camera', player: p });
