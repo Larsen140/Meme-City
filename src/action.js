@@ -176,11 +176,17 @@ export class Action {
     this.nextRaffleAt = Date.now() + 4 * 60_000; // naechste Abstimmung
     this.vote = null;
     this.raffle = null;
+    this.seen = new Map(); // Spieler-ID -> erste Aktivitaet in diesem LIVE
+    this.stayDone = new Set(); // hat den Dabeibleib-Bonus in diesem LIVE schon
+    this.sprint = null; // Bau-Sprint: Ende-Zeitpunkt
+    this.nextSprintAt = Date.now() + 2 * 60_000;
     this.active = new Map(); // Spieler-ID -> letzte Aktivitaet (Chat/Like)
     // Zeitplan: Duell, Verlosung, Treue-Bonus
     setInterval(() => {
       const now = Date.now();
       if (!this.duel && !this.raffle && !this.vote && now >= this.nextDuelAt) { this.nextDuelAt = now + this.duelEvery; this.startDuel(); }
+      if (!this.sprint && now >= this.nextSprintAt) { this.nextSprintAt = now + (config.sprintEveryMinutes ?? 10) * 60_000; this.startSprint(); }
+      if (this.sprint && now >= this.sprint) this.endSprint();
       if (!this.duel && !this.raffle && !this.vote && now >= this.nextRaffleAt) { this.nextRaffleAt = now + (config.voteEveryMinutes ?? 7) * 60_000; this.startVote(); }
     }, 1000);
     setInterval(() => this.loyaltyBonus(), (config.loyaltyMinutes ?? 5) * 60_000);
@@ -196,6 +202,7 @@ export class Action {
     this.roomId = roomId;
     if (!first) this.log(`[Like-Ziel] neuer LIVE – Ziel zurückgesetzt`);
     Object.assign(this, { sessionLikes: 0, goalStart: 0, goalTarget: this.firstGoal, eventIndex: 0, goalEvent: EVENTS[0] });
+    this.seen.clear(); this.stayDone.clear();
     this.pushGoal();
   }
 
@@ -219,6 +226,7 @@ export class Action {
 
   onLike(p, count) {
     this.active.set(p.id, Date.now());
+    this.stayCheck(p);
     this.sessionLikes += count;
     if (this.duel) this.addDuel(p, count);
     if (this.sessionLikes - this.goalStart >= this.goalTarget) this.goalReached();
@@ -232,6 +240,9 @@ export class Action {
   onChat(p, text) {
     const t = text.toLowerCase().trim();
     this.active.set(p.id, Date.now());
+    this.stayCheck(p);
+    // Jede Nachricht baut ein bisschen am Gemeinschaftsbau mit (pro Person hoechstens alle 15 s)
+    if (this.ready('cc:' + p.id, 15_000)) this.game.addCommunity(0.4);
     if (this.raffle && /^(ich|dabei|bin dabei|hier|me)(\s|!|\.|$)/.test(t)) {
       if (!this.raffle.entries.has(p.id)) {
         this.raffle.entries.add(p.id);
@@ -284,8 +295,8 @@ export class Action {
     if (this.duel || this.raffle || this.vote) return;
     const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
     const now = Date.now();
-    const next = this.nextDuelAt < this.nextRaffleAt
-      ? `⚔️ Duell in ${mmss(this.nextDuelAt - now)}` : `🗳️ Abstimmung in ${mmss(this.nextRaffleAt - now)}`;
+    const next = this.sprint ? `🏗️ BAU-SPRINT x2 – ${mmss(this.sprint - now)}`
+      : [[this.nextDuelAt, '⚔️ Duell'], [this.nextRaffleAt, '🗳️ Abstimmung'], [this.nextSprintAt, '🏗️ Bau-Sprint']].sort((a, b) => a[0] - b[0]).map(([t, n]) => `${n} in ${mmss(t - now)}`)[0];
     this.broadcast({ type: 'goal', name: this.goalEvent, cur: this.sessionLikes - this.goalStart, target: this.goalTarget, next });
   }
 
@@ -358,6 +369,48 @@ export class Action {
     const need = c.nextLevel ? Math.max(1, Math.ceil(c.coinsNeeded)) : 0;
     if (need) this.game.addPoints(p, need);
     else this.builder.enqueue({ type: 'camera', player: p });
+  }
+
+  // ---------- Dabeibleiben: nach 5 Minuten waechst das eigene Haus eine Stufe (einmal pro LIVE) ----------
+
+  stayCheck(p) {
+    if (p.plot === null || this.stayDone.has(p.id)) return;
+    const now = Date.now(), mins = this.cfg.stayMinutes ?? 5;
+    if (!this.seen.has(p.id)) {
+      this.seen.set(p.id, now);
+      this.game.ack(p, `⏳ Bleib ${mins} Minuten dabei – dann wächst dein Haus **eine Stufe**!`);
+      return;
+    }
+    if (now - this.seen.get(p.id) < mins * 60_000) return;
+    this.stayDone.add(p.id);
+    const c = this.game.card(p);
+    const need = c.nextLevel ? Math.max(1, Math.ceil(c.coinsNeeded)) : 0;
+    this.log(`[Dabeibleiben] @${p.name} +${need}`);
+    this.game.ack(p, `🏠 ${mins} Minuten dabei – dein Haus **wächst**!`);
+    this.broadcast({ type: 'ticker', text: `🏠 @${p.name} ist seit ${mins} Minuten dabei – das Haus wächst!`, highlight: true });
+    if (need) this.game.addPoints(p, need);
+    if (this.ready('staytalk', 30_000)) this.speech.say(`${spoken(p)} ist seit ${mins} Minuten dabei. Dafür wächst das Haus!`);
+  }
+
+  // ---------- Bau-Sprint: eine Minute zaehlt alles doppelt fuer den Gemeinschaftsbau ----------
+
+  sprintMult() { return this.sprint ? 2 : 1; }
+
+  startSprint() {
+    const s = this.game.state().community;
+    if (!s) return;
+    this.sprint = Date.now() + 60_000;
+    this.log('[Bau-Sprint] gestartet');
+    this.speech.say(`Bau-Sprint! Eine Minute lang zählt alles doppelt für das ${s.name}. Jeder Like und jede Nachricht baut mit!`, true);
+    this.broadcast({ type: 'banner', title: '🏗️ BAU-SPRINT x2!', text: `1 Minute zählt alles doppelt fürs ${s.name}`, big: true });
+  }
+
+  endSprint() {
+    this.sprint = null;
+    const s = this.game.state().community;
+    this.log('[Bau-Sprint] vorbei');
+    if (s) this.speech.say(`Bau-Sprint vorbei! Das ${s.name} steht jetzt bei ${Math.floor((100 * s.progress) / s.goal)} Prozent.`);
+    this.game.pushState();
   }
 
   // ---------- Treue-Bonus: wer aktiv dabei bleibt, bekommt Punkte ----------

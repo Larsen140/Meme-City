@@ -213,6 +213,7 @@ export class Game {
     const c = this.store.data.community;
     if (!COMMUNITY_PROJECTS[c.index]) return;
     const before = COMMUNITY_PROJECTS[c.index] ? c.progress / COMMUNITY_PROJECTS[c.index].goal : 0;
+    up *= this.action?.sprintMult?.() || 1;
     c.progress += up;
     // Zwischenstaende feiern
     const cur = COMMUNITY_PROJECTS[c.index];
@@ -225,12 +226,20 @@ export class Game {
           this.broadcast({ type: 'banner', title: `🏗️ ${cur.name.toUpperCase()}: ${pct} %`, text: `${fmt(c.progress)} / ${fmt(cur.goal)} Punkte`, big: pct >= 75 });
         }
       }
+      // Baustelle waechst sichtbar mit: alle 10 % ein Stueck mehr
+      const stage = Math.min(9, Math.floor(now * 10));
+      if (stage > (c.stage || 0)) {
+        this.builder.enqueue({ type: 'communityStage', index: c.index, name: cur.name, from: (c.stage || 0) / 10, to: stage / 10 });
+        c.stage = stage;
+        this.broadcast({ type: 'ticker', text: `🏗️ Baustelle ${cur.name}: ${stage * 10} % stehen schon!`, highlight: true });
+      }
     }
     let proj;
     while ((proj = COMMUNITY_PROJECTS[c.index]) && c.progress >= proj.goal) {
       c.progress -= proj.goal;
       const index = c.index++;
-      this.builder.enqueue({ type: 'community', index, name: proj.name });
+      this.builder.enqueue({ type: 'community', index, name: proj.name, partial: (c.stage || 0) > 0 });
+      c.stage = 0;
       this.speech.say(`Gemeinsam geschafft! Meme City bekommt ein ${proj.name}! Danke an alle!`, true);
       this.broadcast({ type: 'banner', title: 'GEMEINSCHAFTSBAU!', text: `${proj.name} wird gebaut`, big: true });
     }

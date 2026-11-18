@@ -274,11 +274,11 @@ export const COMMUNITY_PROJECTS = [
   { name: 'Rathaus',      goal: 1000 },
   { name: 'Fußballplatz', goal: 2000 },
   { name: 'Freibad',      goal: 3000 },
-  { name: 'Bar',          goal: 4000 },
-  { name: 'Leuchtturm',   goal: 6000 },
-  { name: 'Kino',         goal: 8000 },
-  { name: 'Riesenrad',    goal: 10000 },
-  { name: 'Stadion',      goal: 15000 },
+  { name: 'Bar',          goal: 2500 },
+  { name: 'Leuchtturm',   goal: 3000 },
+  { name: 'Kino',         goal: 3500 },
+  { name: 'Riesenrad',    goal: 4000 },
+  { name: 'Stadion',      goal: 5000 },
 ];
 
 /** Bauplan fuer einen Gemeinschaftsbau (gleiche Form wie housePlan). */

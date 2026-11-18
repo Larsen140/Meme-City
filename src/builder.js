@@ -60,7 +60,8 @@ export class Builder {
       try {
         if (job.type === 'build') await this.buildHouse(job.player, job.instant);
         else if (job.type === 'camera') await this.showHouse(job.player);
-        else if (job.type === 'community') await this.buildCommunity(job.index, job.name);
+        else if (job.type === 'community') await this.buildCommunity(job.index, job.name, job.partial);
+        else if (job.type === 'communityStage') await this.buildCommunityStage(job.index, job.name, job.from, job.to);
         else if (job.type === 'fn') await job.fn();
       } catch (e) {
         this.log('[Bau] Fehler: ' + e.message);
@@ -430,12 +431,29 @@ export class Builder {
     await sleep(6000);
   }
 
-  async buildCommunity(index, name) {
+  /** Baustelle: Teil eines Gemeinschaftsbaus setzen (from/to = Anteil 0..1). */
+  async buildCommunityStage(index, name, from, to) {
+    const cell = COMMUNITY_CELLS[index % COMMUNITY_CELLS.length];
+    const plan = communityPlan(name, cell.x, cell.z);
+    const n = plan.layers.length, a = Math.floor(from * n), b = Math.max(a + 1, Math.floor(to * n));
+    await this.cameraAtPlot(cell.x, cell.z, Math.max(plan.top - BASE, 12), true);
+    await sleep(600);
+    if (from <= 0) await this.mc.sendAll(clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone')));
+    for (const l of plan.layers.slice(a, b)) {
+      await this.mc.sendAll(l.cmds);
+      await this.mc.send(`particle minecraft:happy_villager ${cell.x} ${l.y + 0.5} ${cell.z} 5 0.3 5 0 25 force`);
+      await sleep(250);
+    }
+    await this.mc.send(`playsound minecraft:block.anvil.use master @a ${cell.x} ${BASE + 3} ${cell.z} 1.5 1.2`);
+    await sleep(2500);
+  }
+
+  async buildCommunity(index, name, partial = false) {
     const cell = COMMUNITY_CELLS[index % COMMUNITY_CELLS.length];
     const plan = communityPlan(name, cell.x, cell.z);
     await this.cameraAtPlot(cell.x, cell.z, Math.max(plan.top - BASE, 12), true);
     await sleep(800);
-    await this.mc.sendAll(clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone')));
+    if (!partial) await this.mc.sendAll(clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone')));
     for (const l of plan.layers) {
       await this.mc.sendAll(l.cmds);
       await this.mc.send(`particle minecraft:happy_villager ${cell.x} ${l.y + 0.5} ${cell.z} 5 0.3 5 0 25 force`);
