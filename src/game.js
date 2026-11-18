@@ -1,7 +1,8 @@
 import fs from 'fs';
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
-import { COMMUNITY_PROJECTS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
+import { findBigSite } from './bigbuild.js';
+import { COMMUNITY_PROJECTS, COMMUNITY_CELLS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
 import { fixCommand } from './typo.js';
 
@@ -22,6 +23,7 @@ export class Game {
     this.cfg = config;
     this.broadcast = broadcast;
     this.log = log;
+    builder.isReserved = (n) => this.reservedPlots().has(n); // grosse Gemeinschaftsbauten nicht als FREI vorbereiten
     this.mayorName = config.mayorName || 'Bürgermeister Memo';
     this.likesPerPoint = config.points?.likesPerPoint ?? 50;
     this.coinsPerPoint = config.points?.coinsPerPoint ?? 1;
@@ -153,8 +155,36 @@ export class Game {
     this.builder.enqueue({ type: 'fn', fn: () => this.builder.prepareFreePlots(from, to) });
   }
 
+  /** Grundstuecke, die fuer grosse Gemeinschaftsbauten reserviert sind. */
+  reservedPlots() {
+    return new Set(Object.values(this.store.data.bigSites || {}).flatMap((s) => s.plots));
+  }
+
+  /** Ort eines Gemeinschaftsbaus. Grosse Bauten reservieren beim ersten Aufruf 4 freie Grundstuecke. */
+  communitySite(index) {
+    const proj = COMMUNITY_PROJECTS[index];
+    if (!proj) return null;
+    if (!proj.big) {
+      const k = COMMUNITY_PROJECTS.slice(0, index).filter((q) => !q.big).length;
+      return COMMUNITY_CELLS[k % COMMUNITY_CELLS.length];
+    }
+    const d = this.store.data;
+    d.bigSites ||= {};
+    if (!d.bigSites[index]) {
+      const site = findBigSite(d.nextPlot, this.reservedPlots());
+      if (!site) return null;
+      d.bigSites[index] = site;
+      this.store.save();
+      this.log(`[Gemeinschaftsbau] Bauplatz für ${proj.name}: Grundstücke ${site.plots.map((n) => n + 1).join(', ')}`);
+      this.builder.enqueue({ type: 'fn', fn: () => this.builder.markBigSite(index, proj.name, site) });
+    }
+    return { ...d.bigSites[index], big: true };
+  }
+
   claimHouse(p, reason = 'chat') {
     if (p.plot !== null) return false;
+    const reserved = this.reservedPlots();
+    while (reserved.has(this.store.data.nextPlot)) this.store.data.nextPlot++;
     p.plot = this.store.data.nextPlot++;
     this.ensureFreePlots();
     p.level = levelForPoints(p.points);
@@ -229,7 +259,7 @@ export class Game {
       // Baustelle waechst sichtbar mit: alle 10 % ein Stueck mehr
       const stage = Math.min(9, Math.floor(now * 10));
       if (stage > (c.stage || 0)) {
-        this.builder.enqueue({ type: 'communityStage', index: c.index, name: cur.name, from: (c.stage || 0) / 10, to: stage / 10 });
+        this.builder.enqueue({ type: 'communityStage', index: c.index, name: cur.name, from: (c.stage || 0) / 10, to: stage / 10, site: this.communitySite(c.index) });
         c.stage = stage;
         this.broadcast({ type: 'ticker', text: `🏗️ Baustelle ${cur.name}: ${stage * 10} % stehen schon!`, highlight: true });
       }
@@ -238,8 +268,9 @@ export class Game {
     while ((proj = COMMUNITY_PROJECTS[c.index]) && c.progress >= proj.goal) {
       c.progress -= proj.goal;
       const index = c.index++;
-      this.builder.enqueue({ type: 'community', index, name: proj.name, partial: (c.stage || 0) > 0 });
+      this.builder.enqueue({ type: 'community', index, name: proj.name, partial: (c.stage || 0) > 0, site: this.communitySite(index) });
       c.stage = 0;
+      this.communitySite(c.index); // naechsten grossen Bauplatz gleich reservieren
       this.speech.say(`Gemeinsam geschafft! Meme City bekommt ${art(proj.name, 'ein')}! Danke an alle!`, true);
       this.broadcast({ type: 'banner', title: 'GEMEINSCHAFTSBAU!', text: `${proj.name} wird gebaut`, big: true });
     }

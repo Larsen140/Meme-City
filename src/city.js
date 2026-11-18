@@ -45,7 +45,7 @@ export const COMMUNITY_CELLS = [
 
 // ---------- Hilfen ----------
 
-class Plan {
+export class Plan {
   constructor() { this.byY = new Map(); }
   add(y, cmd) {
     if (!this.byY.has(y)) this.byY.set(y, []);
@@ -275,10 +275,19 @@ export const COMMUNITY_PROJECTS = [
   { name: 'Fußballplatz', goal: 2000 },
   { name: 'Freibad',      goal: 3000 },
   { name: 'Bar',          goal: 2500 },
+  // big: belegt 4 freie Grundstuecke am Stadtrand (siehe bigbuild.js), sonst ein Platz am Stadtplatz
+  { name: 'Kino',         goal: 4000, big: true },
   { name: 'Leuchtturm',   goal: 3000 },
-  { name: 'Kino',         goal: 3500 },
-  { name: 'Riesenrad',    goal: 4000 },
+  { name: 'Erlebnisbad',  goal: 5000, big: true },
+  { name: 'Riesenrad',    goal: 3500 },
+  { name: 'Burger-Bude',  goal: 5000, big: true },
+  { name: 'Eisdiele',     goal: 3500 },
   { name: 'Stadion',      goal: 5000 },
+  { name: 'Einkaufszentrum', goal: 6000, big: true },
+  { name: 'Feuerwehr',    goal: 6000, big: true },
+  { name: 'Schule',       goal: 7000, big: true },
+  { name: 'Polizei',      goal: 7000, big: true },
+  { name: 'Krankenhaus',  goal: 8000, big: true },
 ];
 
 const GENUS = { Bar: 'f', Leuchtturm: 'm', 'Fußballplatz': 'm' }; // sonst saechlich
@@ -298,6 +307,7 @@ export function communityPlan(name, cx, cz) {
   switch (name) {
     case 'Rathaus': return style({ floors: 3, wall: 'quartz_bricks', corner: 'quartz_pillar', roof: 'green_terracotta', window: 'glass' });
     case 'Bar': return style({ floors: 1, wall: 'dark_oak_planks', corner: 'stripped_dark_oak_log', roof: 'red_concrete', roofType: 'flat', window: 'orange_stained_glass' });
+    case 'Eisdiele': return style({ floors: 1, wall: 'pink_concrete', corner: 'white_concrete', roof: 'light_blue_concrete', roofType: 'pyramid', window: 'glass' });
     case 'Kino': return style({ wall: 'black_concrete', corner: 'red_concrete', roof: 'smooth_stone_slab', roofType: 'flat', window: 'yellow_stained_glass' });
     case 'Stadion': return style({ w: 13, d: 13, floors: 2, wall: 'white_concrete', corner: 'light_gray_concrete', roof: 'white_concrete', roofType: 'flat', window: 'green_stained_glass' });
   }
@@ -378,14 +388,7 @@ export function lampCommands(cx, cz) {
 export function freePlotDecoration(cx, cz, n) {
   let seed = n * 7919 + 13;
   const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
-  const trees = ['minecraft:oak', 'minecraft:birch', 'minecraft:fancy_oak', 'minecraft:oak', 'minecraft:birch'];
-  const c = [];
-  const count = 1 + Math.floor(rnd() * 2);
-  for (let i = 0; i < count; i++) {
-    const x = cx - 3 + Math.floor(rnd() * 7), z = cz - 3 + Math.floor(rnd() * 7);
-    if (Math.abs(x - cx) < 3 && Math.abs(z - cz) < 3) continue;
-    c.push(`place feature ${trees[Math.floor(rnd() * trees.length)]} ${x} ${BASE} ${z}`);
-  }
+  const c = []; // keine Baeume mehr auf freien Grundstuecken, nur Blumen
   const flowers = ['poppy', 'dandelion', 'cornflower', 'azure_bluet', 'oxeye_daisy', 'allium', 'short_grass', 'short_grass', 'short_grass'];
   for (let i = 0; i < 14; i++) {
     const x = cx - 6 + Math.floor(rnd() * 13), z = cz - 6 + Math.floor(rnd() * 13);

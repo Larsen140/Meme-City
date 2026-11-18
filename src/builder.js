@@ -1,5 +1,6 @@
 // Baut Haeuser mit Animation und steuert die Kamera.
 // Alles laeuft nacheinander in einer Warteschlange, damit sich nichts ueberschneidet.
+import { bigPlan, bigClearCommands } from './bigbuild.js';
 import {
   BASE, HALF, plotCenter, housePlan, gardenCommands, roadCommands, scaffoldCommands,
   removeScaffoldCommands, clearPlotCommands, lampCommands, freePlotDecoration, scaffoldCleanupCommands, communityPlan, plazaCommands, COMMUNITY_CELLS, frontOf,
@@ -60,8 +61,8 @@ export class Builder {
       try {
         if (job.type === 'build') await this.buildHouse(job.player, job.instant);
         else if (job.type === 'camera') await this.showHouse(job.player);
-        else if (job.type === 'community') await this.buildCommunity(job.index, job.name, job.partial);
-        else if (job.type === 'communityStage') await this.buildCommunityStage(job.index, job.name, job.from, job.to);
+        else if (job.type === 'community') await this.buildCommunity(job.index, job.name, job.partial, job.site);
+        else if (job.type === 'communityStage') await this.buildCommunityStage(job.index, job.name, job.from, job.to, job.site);
         else if (job.type === 'fn') await job.fn();
       } catch (e) {
         this.log('[Bau] Fehler: ' + e.message);
@@ -257,6 +258,7 @@ export class Builder {
   async prepareFreePlots(from, to) {
     const mc = this.mc;
     for (let n = from; n < to; n++) {
+      if (this.isReserved?.(n)) continue; // gehoert zu einem grossen Gemeinschaftsbau
       const { x: cx, z: cz } = plotCenter(n);
       const a = cx - HALF - 5, b = cx + HALF + 5, e = cz - HALF - 5, f = cz + HALF + 5;
       await mc.send(`forceload add ${a} ${e} ${b} ${f}`);
@@ -432,13 +434,27 @@ export class Builder {
   }
 
   /** Baustelle: Teil eines Gemeinschaftsbaus setzen (from/to = Anteil 0..1). */
-  async buildCommunityStage(index, name, from, to) {
-    const cell = COMMUNITY_CELLS[index % COMMUNITY_CELLS.length];
-    const plan = communityPlan(name, cell.x, cell.z);
+  /** Ort, Bauplan und Aufraeum-Befehle eines Gemeinschaftsbaus (klein am Stadtplatz oder gross am Stadtrand). */
+  communitySite(index, name, site) {
+    const cell = site || COMMUNITY_CELLS[index % COMMUNITY_CELLS.length];
+    const plan = cell.big ? bigPlan(name, cell.x, cell.z) : communityPlan(name, cell.x, cell.z);
+    const clear = cell.big ? bigClearCommands(cell) : clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone'));
+    return { cell, plan, clear, height: Math.max(plan.top - BASE, cell.big ? 24 : 12) };
+  }
+
+  /** Bauplatz fuer einen grossen Gemeinschaftsbau markieren (FREI-Schilder weg, Bauplatz-Schild hin). */
+  async markBigSite(index, name, site) {
+    await this.mc.sendAll(site.plots.map((n) => `kill @e[tag=mc_plot_${n}]`));
+    await this.mc.send(`kill @e[tag=mc_comm_${index}]`);
+    await this.mc.send(signCommand(site.x, BASE + 6, site.z, [`mc_comm_${index}`], 4, `{text:"BAUPLATZ\\n",color:"#FFC93C",bold:true,extra:[{text:${snbtString(name)},color:"#FFFFFF",bold:true}]}`));
+  }
+
+  async buildCommunityStage(index, name, from, to, site) {
+    const { cell, plan, clear, height } = this.communitySite(index, name, site);
     const n = plan.layers.length, a = Math.floor(from * n), b = Math.max(a + 1, Math.floor(to * n));
-    await this.cameraAtPlot(cell.x, cell.z, Math.max(plan.top - BASE, 12), true);
+    await this.cameraAtPlot(cell.x, cell.z, height, true);
     await sleep(600);
-    if (from <= 0) await this.mc.sendAll(clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone')));
+    if (from <= 0) await this.mc.sendAll(clear);
     for (const l of plan.layers.slice(a, b)) {
       await this.mc.sendAll(l.cmds);
       await this.mc.send(`particle minecraft:happy_villager ${cell.x} ${l.y + 0.5} ${cell.z} 5 0.3 5 0 25 force`);
@@ -448,12 +464,11 @@ export class Builder {
     await sleep(2500);
   }
 
-  async buildCommunity(index, name, partial = false) {
-    const cell = COMMUNITY_CELLS[index % COMMUNITY_CELLS.length];
-    const plan = communityPlan(name, cell.x, cell.z);
-    await this.cameraAtPlot(cell.x, cell.z, Math.max(plan.top - BASE, 12), true);
+  async buildCommunity(index, name, partial = false, site) {
+    const { cell, plan, clear, height } = this.communitySite(index, name, site);
+    await this.cameraAtPlot(cell.x, cell.z, height, true);
     await sleep(800);
-    if (!partial) await this.mc.sendAll(clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone')));
+    if (!partial) await this.mc.sendAll(clear);
     for (const l of plan.layers) {
       await this.mc.sendAll(l.cmds);
       await this.mc.send(`particle minecraft:happy_villager ${cell.x} ${l.y + 0.5} ${cell.z} 5 0.3 5 0 25 force`);
