@@ -544,7 +544,7 @@ export class Game {
     if (!p) return;
     const now = Date.now();
     // Name kurz im Laufband: jeder sieht, dass er bemerkt wird
-    if (now - (this.lastJoinTicker || 0) > 6_000) { this.lastJoinTicker = now; this.broadcast({ type: 'ticker', text: p.plot !== null ? `👋 @${p.name} ist zurück in Meme City!` : `👋 Willkommen @${p.name}! Schreib **Haus** und zieh ein` }); }
+    if (now - (this.lastJoinTicker || 0) > 30_000) { this.lastJoinTicker = now; this.broadcast({ type: 'ticker', text: p.plot !== null ? `👋 @${p.name} ist zurück in Meme City!` : `👋 Willkommen @${p.name}! Schreib **Haus** und zieh ein` }); }
     if (now - (this.lastGreet || 0) < 20_000 || this.speech.queue.length) return;
     this.lastGreet = now;
     const n = spoken(p);

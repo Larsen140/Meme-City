@@ -546,7 +546,7 @@ export class Action {
 
   /** Freundlicher Hinweis, wenn jemand einen Befehl zu schnell wiederholt */
   waitHint(p, what = 'Das') {
-    this.game.ack(p, `⏳ ${what} geht in einer Minute wieder`);
+    this.game.ack(p, `⏳ ${what} geht gleich wieder – kurz warten`);
     if (this.game.chatReplyReady(p, 30_000)) this.speech.say(pick([`${spoken(p)}, kurz durchatmen! In einer Minute geht das wieder.`, `Moment, ${spoken(p)}, ich bin gleich wieder für dich da!`]));
   }
 
