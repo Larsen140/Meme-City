@@ -133,6 +133,16 @@ app.post('/api/say', (req, res) => { speech.say(String(req.body.text || ''), tru
 app.post('/api/tiktok/connect', async (req, res) => { tiktok.connect(); res.json({ ok: true }); });
 app.post('/api/tiktok/disconnect', async (req, res) => { await tiktok.disconnect(); res.json({ ok: true }); });
 app.post('/api/camera/overview', (req, res) => { builder.cameraOverview(); res.json({ ok: true }); });
+// Freie Grundstuecke von..bis (neu) vorbereiten, z. B. {from:120,to:170}
+app.post('/api/prepare', (req, res) => {
+  const from = Number(req.body.from), to = Number(req.body.to);
+  if (!(from >= store.data.nextPlot && to > from && to - from <= 100)) return res.status(400).json({ error: 'ungueltig' });
+  if (to > (store.data.preparedUntil || 0)) { store.data.preparedUntil = to; store.save(); }
+  builder.enqueue({ type: 'fn', fn: () => builder.prepareFreePlots(from, to) });
+  res.json({ ok: true });
+});
+// Test: bestimmte Leerlauf-Show abspielen (spotlight, train, plane, windmill, pyramid, ...)
+app.post('/api/show/:name', (req, res) => { builder.nextShow = req.params.name; res.json({ ok: true }); }); // laeuft als naechste Leerlauf-Show (nie parallel zur Kamera)
 app.post('/api/rebuild', (req, res) => {
   // Alle Haeuser neu setzen (z. B. nach neuer Welt), ohne Animation
   builder.enqueue({ type: 'fn', fn: () => builder.setupWorld() });

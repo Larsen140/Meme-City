@@ -26,7 +26,7 @@ export class Game {
     this.checkedNoHouse = new Set();
 
     builder.housesProvider = () => this.ranking();
-    builder.idleShow = (busy) => this.idleShow(busy);
+    builder.idleShow = (busy, force) => this.idleShow(busy, force);
     builder.onEvent = (ev) => {
       if (ev.type === 'tourHouse') {
         this.broadcast({ type: 'player', card: this.card(ev.player) });
@@ -412,11 +412,11 @@ export class Game {
   // ---------- Leerlauf: Buergermeister erzaehlt was ----------
 
   /** Kleine Shows, wenn gerade nichts passiert (vom Drohnenflug aufgerufen). */
-  async idleShow(busy) {
+  async idleShow(busy, force) {
     const b = this.builder, fx = this.giftFx;
     const houses = this.ranking();
-    const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights'];
-    const show = shows[Math.floor(Math.random() * shows.length)];
+    const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights', 'windmill', 'pyramid'];
+    const show = force || shows[Math.floor(Math.random() * shows.length)];
     const rnd = houses[Math.floor(Math.random() * houses.length)];
     if (show === 'spotlight' && rnd && fx) {
       // Spotlight auf ein zufaelliges Haus mit einem kleinen Effekt
@@ -445,6 +445,19 @@ export class Game {
         if (i % 2 === 0) await b.mc.send(`playsound minecraft:block.note_block.bass master @a 0 ${BASE_Y} 0 1.5 ${[0.6, 0.8, 1, 0.8][i % 4]}`);
         await new Promise((r) => setTimeout(r, 250));
       }
+    } else if (show === 'windmill') {
+      // Flug zur Windmuehle im Norden, langsam an den drehenden Fluegeln vorbei
+      this.broadcast({ type: 'ticker', text: '🌬️ Die Windmühle von Meme City' });
+      await b.camera(16, BASE_Y + 13, -122, 0, BASE_Y + 11, -146, 3.5, true);
+      if (busy()) return;
+      await b.camera(-12, BASE_Y + 9, -128, 0, BASE_Y + 12, -146, 6, true);
+      await b.waitIdle(1500, busy);
+    } else if (show === 'pyramid') {
+      this.broadcast({ type: 'ticker', text: '🏜️ Die Pyramide am Stadtrand' });
+      await b.camera(-60, BASE_Y + 22, -120, -95, BASE_Y + 12, -175, 3.5, true);
+      if (busy()) return;
+      await b.camera(-125, BASE_Y + 16, -128, -95, BASE_Y + 12, -175, 7, true);
+      await b.waitIdle(1500, busy);
     } else if (show === 'fireworks') {
       await b.camera(0, BASE_Y + 30, 60, 0, BASE_Y + 12, 0, 3, true);
       if (busy()) return;

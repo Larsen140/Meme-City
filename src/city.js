@@ -13,14 +13,21 @@ export const CLEAR_HEIGHT = 64; // so hoch wird beim Abriss geleert
 const RESERVED = 1; // Zellen mit |x|<=1 und |z|<=1 sind der Stadtplatz
 let spiral = [];
 
+// Deko-Gebaeude am Stadtrand [x, z, Radius]: ab Ring 7 werden Zellen, die sie beruehren, uebersprungen.
+// (Ringe bis 6 bleiben unveraendert, damit bestehende Grundstuecksnummern gleich bleiben.)
+export const DEKO_ZONES = [[0, -150, 9], [-150, -40, 13], [150, -40, 9], [0, 155, 10], [-95, -175, 32]];
+const blocked = (gx, gz) => DEKO_ZONES.some(([x, z, r]) => Math.abs(gx * PITCH - x) < r + 12 && Math.abs(gz * PITCH - z) < r + 12);
+
 function buildSpiral(count) {
   spiral = [];
   for (let r = RESERVED + 1; spiral.length < count; r++) {
+    const ring = [];
     // Ring r im Uhrzeigersinn, beginnend oben links
-    for (let x = -r; x < r; x++) spiral.push([x, -r]);
-    for (let z = -r; z < r; z++) spiral.push([r, z]);
-    for (let x = r; x > -r; x--) spiral.push([x, r]);
-    for (let z = r; z > -r; z--) spiral.push([-r, z]);
+    for (let x = -r; x < r; x++) ring.push([x, -r]);
+    for (let z = -r; z < r; z++) ring.push([r, z]);
+    for (let x = r; x > -r; x--) ring.push([x, r]);
+    for (let z = r; z > -r; z--) ring.push([-r, z]);
+    for (const c of ring) if (r < 7 || !blocked(c[0], c[1])) spiral.push(c);
   }
 }
 

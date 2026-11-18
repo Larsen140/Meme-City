@@ -123,6 +123,8 @@ export class CityLife {
       store.save();
     }
 
+    await this.setupWindmill();
+
     this.timer = setInterval(() => this.tick(), TICK_MS);
     // Sicherheitsnetz: jede Minute klares Wetter und Mittag, falls irgendetwas Regen ausgeloest hat
     setInterval(() => { this.mc.send('weather clear 1000000'); }, 60_000);
@@ -147,6 +149,31 @@ export class CityLife {
       else { s -= side; x = c + h - s; z = c - h; yaw = 90; }
     }
     return { x: x.toFixed(2), z: z.toFixed(2), yaw };
+  }
+
+  /** Windmuehle im Norden (0, -150): vier Fluegel aus Display-Bloecken drehen sich langsam um die Nabe. */
+  async setupWindmill() {
+    const mc = this.mc, hx = 0, hy = BASE + 12, hz = -146; // Nabe vorne an der Muehle (Seite zur Stadt)
+    await mc.send('forceload add -16 -160 15 -140'); // Muehle bleibt geladen, sonst stehen die Fluegel still
+    await mc.send(`fill ${hx - 9} ${BASE + 3} ${hz} ${hx + 9} ${BASE + 21} ${hz} air`); // alte feste Fluegel weg
+    await mc.send(`setblock ${hx} ${hy} ${hz} oak_log[axis=z]`);
+    await mc.send('kill @e[tag=mc_mill]');
+    const parts = [['s', 'white_wool', '1.8f,9f,0.12f', 1.1], ['p', 'stripped_spruce_log', '0.35f,9.6f,0.15f', 1.02]];
+    const tf = (k, scale) => {
+      const a = ((this.millAngle + k * 90) * Math.PI) / 180;
+      return `{left_rotation:[0f,0f,${Math.sin(a / 2).toFixed(4)}f,${Math.cos(a / 2).toFixed(4)}f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[${scale}]}`;
+    };
+    this.millAngle = 0;
+    for (let k = 0; k < 4; k++) for (const [p, block, scale, dz] of parts) {
+      await mc.send(`summon block_display ${hx + 0.5} ${hy + 0.5} ${hz + dz} {Tags:["mc_mill","mc_mill_${p}${k}"],interpolation_duration:21,block_state:"minecraft:${block}",transformation:${tf(k, scale)}}`);
+    }
+    // jede Sekunde 30 Grad weiter, Minecraft gleitet weich dazwischen
+    setInterval(() => {
+      this.millAngle = (this.millAngle + 30) % 720; // 720: Quaternion bleibt stetig, kein Ruckeln beim Ueberlauf
+      const cmds = [];
+      for (let k = 0; k < 4; k++) for (const [p, , scale] of parts) cmds.push(`data merge entity @e[tag=mc_mill_${p}${k},limit=1] {start_interpolation:0,transformation:${tf(k, scale)}}`);
+      this.mc.sendAll(cmds).catch(() => {});
+    }, 1000);
   }
 
   async tick() {

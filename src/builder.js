@@ -80,8 +80,9 @@ export class Builder {
       while (!busy()) {
         const kind = step++ % 6;
         // Jede zweite Runde eine kleine Show in der Stadt statt nur Flug
-        if (step % 2 === 0 && this.idleShow) {
-          try { await this.idleShow(busy); } catch (e) { this.log('[Show] ' + e.message); }
+        if ((step % 2 === 0 || this.nextShow) && this.idleShow) {
+          const force = this.nextShow; this.nextShow = null;
+          try { await this.idleShow(busy, force); } catch (e) { this.log('[Show] ' + e.message); }
           await this.waitIdle(1500, busy);
           continue;
         }
@@ -174,6 +175,24 @@ export class Builder {
       if (!done) await sleep(CAM_STEP_TICKS * 50 - ((Date.now() - start) % (CAM_STEP_TICKS * 50)));
     }
     this.cam = { ...to, yaw: from.yaw + dYaw };
+  }
+
+  /** Kamera folgt einem bewegten Ziel: fn(t) mit t von 0..1 liefert {cam, look, cmds}, gleichmaessig ueber `seconds`. */
+  async cameraTrack(seconds, fn) {
+    await this.ensureCamera();
+    const start = Date.now(), total = seconds * 1000;
+    const inJob = this.running; // als Leerlauf-Show gestartet: bei neuer Arbeit Kamera sofort freigeben
+    for (let done = false; !done;) {
+      const t = Math.min(1, (Date.now() - start + 50) / total);
+      done = t >= 1;
+      const { cam, look, cmds = [] } = fn(t);
+      if (!inJob && (this.running || this.queue.length)) { await this.mc.sendAll(cmds); if (done) break; await sleep(50); continue; }
+      const dx = look.x - cam.x, dy = look.y - cam.y, dz = look.z - cam.z;
+      const yaw = (Math.atan2(-dx, dz) * 180) / Math.PI, pitch = (-Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI;
+      await this.mc.sendAll([...cmds, `tp @e[tag=mc_cam,limit=1] ${cam.x.toFixed(2)} ${cam.y.toFixed(2)} ${cam.z.toFixed(2)} ${yaw.toFixed(1)} ${pitch.toFixed(1)}`]);
+      this.cam = { ...cam, yaw, pitch };
+      if (!done) await sleep(50 - ((Date.now() - start) % 50));
+    }
   }
 
   async cameraAtPlot(cx, cz, height, inward = false, seconds, abortable = false) {
@@ -320,12 +339,14 @@ export class Builder {
     // 3. Geruest und Kran
     await mc.sendAll(scaffoldCommands(cx, cz, plan, plan.top));
     await mc.send(`playsound minecraft:block.anvil.place master @a ${cx} ${BASE + 3} ${cz} 1 1.2`);
+    await this.spawnWorkers(plan, cx, cz);
     await sleep(700);
-    // 4. Schicht fuer Schicht
+    // 4. Schicht fuer Schicht – die Bauarbeiter klettern mit nach oben
     const delay = this.fast ? 60 : Math.max(120, Math.min(450, 5000 / plan.layers.length));
     player.top = plan.top;
     for (const l of plan.layers) {
       await mc.sendAll(l.cmds);
+      await this.moveWorkers(plan, l.y, cx, cz);
       await mc.send(`particle minecraft:happy_villager ${cx} ${l.y + 0.5} ${cz} ${plan.x2 - cx} 0.3 ${plan.z2 - cz} 0 25 force`);
       await mc.send(`playsound minecraft:block.stone.place master @a ${cx} ${l.y} ${cz} 1 ${0.8 + Math.random() * 0.6}`);
       await sleep(delay);
@@ -335,6 +356,7 @@ export class Builder {
     await sleep(500);
     await mc.sendAll(removeScaffoldCommands(cx, cz, plan.top));
     await mc.sendAll(gardenCommands(cx, cz, plan));
+    await this.workersDone(plan, cx, cz);
     await mc.send(`playsound minecraft:block.grass.place master @a ${cx} ${BASE} ${cz} 1 1`);
     // 6. Schild + Feuerwerk
     await this.nameTag(player, plan.top);
@@ -344,6 +366,57 @@ export class Builder {
     await sleep(this.fast ? 800 : 2500);
     await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
     player.builtLevel = level;
+  }
+
+  // ---------- Bauarbeiter ----------
+  // Vier Figuren (Mannequins) mit gelbem Helm stehen auf den Ecken der gerade gebauten Schicht
+  // und schlagen mit ihrem Werkzeug. Getaggt mit mc_gift_tmp, damit Neustarts sie aufraeumen.
+
+  async spawnWorkers(plan, cx, cz) {
+    const tools = ['iron_pickaxe', 'iron_shovel', 'bricks', 'iron_axe'];
+    const shirts = [16744448, 16744448, 3949738, 16744448]; // orange Westen, einer in Blau
+    this.workerGen = (this.workerGen || 0) + 1; // alter Aufraeum-Timer greift nicht mehr
+    await this.mc.send('kill @e[tag=mc_worker]');
+    for (let k = 0; k < 4; k++) {
+      const [x, z] = this.workerCorner(plan, k, 2);
+      await this.mc.send(`summon mannequin ${x} ${BASE} ${z} {Tags:["mc_worker","mc_worker${k}","mc_gift_tmp"],hide_description:1b,immovable:1b,NoGravity:1b,Invulnerable:1b,` +
+        `equipment:{head:{id:"minecraft:leather_helmet",components:{"minecraft:dyed_color":16766720}},chest:{id:"minecraft:leather_chestplate",components:{"minecraft:dyed_color":${shirts[k]}}},` +
+        `legs:{id:"minecraft:leather_leggings",components:{"minecraft:dyed_color":3355443}},feet:{id:"minecraft:leather_boots",components:{"minecraft:dyed_color":6704179}},mainhand:{id:"minecraft:${tools[k]}"}}}`);
+    }
+    await this.mc.send(`execute as @e[tag=mc_worker] at @s run tp @s ~ ~ ~ facing ${cx} ${BASE} ${cz}`);
+  }
+
+  /** Ecke k des Hauses (0..3), um `out` Bloecke nach aussen versetzt. */
+  workerCorner(plan, k, out = 0) {
+    const x = k & 1 ? plan.x2 + out : plan.x1 - out, z = k & 2 ? plan.z2 + out : plan.z1 - out;
+    return [x + 0.5, z + 0.5];
+  }
+
+  async moveWorkers(plan, y, cx, cz) {
+    this.workerStep = (this.workerStep || 0) + 1;
+    const cmds = [];
+    for (let k = 0; k < 4; k++) {
+      const [x, z] = this.workerCorner(plan, k);
+      cmds.push(`tp @e[tag=mc_worker${k},limit=1] ${x} ${y + 1} ${z} facing ${cx} ${y + 0.5} ${cz}`);
+    }
+    // abwechselnd zwei Arbeiter schlagen zu
+    cmds.push(`swing @e[tag=mc_worker${this.workerStep % 2}] mainhand`, `swing @e[tag=mc_worker${2 + (this.workerStep % 2)}] mainhand`);
+    await this.mc.sendAll(cmds);
+  }
+
+  async workersDone(plan, cx, cz) {
+    const fr = plan.front || frontOf(cx, cz);
+    const cmds = [];
+    for (let k = 0; k < 4; k++) {
+      // in einer Reihe vor dem Haus aufstellen, Blick zur Kamera (nach vorne)
+      const off = (k - 1.5) * 1.6, d = (fr.dx ? plan.x2 - plan.x1 : plan.z2 - plan.z1) / 2 + 3;
+      const x = cx + fr.dx * d + (fr.dz ? off : 0) + 0.5, z = cz + fr.dz * d + (fr.dx ? off : 0) + 0.5;
+      cmds.push(`tp @e[tag=mc_worker${k},limit=1] ${x} ${BASE} ${z} facing ${x + fr.dx * 5} ${BASE + 1} ${z + fr.dz * 5}`);
+    }
+    cmds.push('swing @e[tag=mc_worker] mainhand', `particle minecraft:happy_villager ${cx} ${BASE + 1} ${cz} 4 1 4 0 30 force`);
+    await this.mc.sendAll(cmds);
+    const gen = (this.workerGen = (this.workerGen || 0) + 1);
+    setTimeout(() => { if (this.workerGen === gen) this.mc.send('kill @e[tag=mc_worker]'); }, 6000);
   }
 
   async showHouse(player) {

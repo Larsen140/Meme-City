@@ -290,12 +290,25 @@ export class GiftFx {
       ['white_concrete', T(-2.5, 0.6, -4, 5, 0.3, 1)], ['red_concrete', T(-0.15, 1.6, -4, 0.3, 1.8, 1.2)],
       ['light_blue_stained_glass', T(-0.6, 1.2, 2.6, 1.2, 0.5, 1)],
     ];
-    for (const [b, tr] of parts) await mc.send(`summon block_display ${sx} ${y} ${sz} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${tr}}`);
-    await sleep(150);
-    for (let k = 0; k < 2; k++) {
-      await mc.send(`execute as @e[tag=${tag}] at @s run tp @s ~${along.x * 40} ~ ~${along.z * 40}`);
-      await sleep(2600);
-    }
+    for (const [b, tr] of parts) await mc.send(`summon block_display ${sx} ${y} ${sz} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:3,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${tr}}`);
+    // Kamera: erst seitlich vor das Flugzeug, dann als Verfolgerkamera schraeg dahinter mitfliegen
+    const side = { x: along.z, z: along.x }; // quer zur Flugrichtung, zur Stadtmitte hin egal
+    const b = this.builder, len = 80, secs = 5.5;
+    const at = (t) => ({ x: sx + along.x * len * t + 0.5, z: sz + along.z * len * t + 0.5 });
+    const p0 = at(0);
+    await b.camera(p0.x - along.x * 18 + side.x * 12, y + 6, p0.z - along.z * 18 + side.z * 12, p0.x, y, p0.z, 1.6);
+    await mc.send(`playsound minecraft:entity.phantom.flap master @a ${p0.x} ${y} ${p0.z} 3 0.5`);
+    await b.cameraTrack(secs, (t) => {
+      const p = at(t);
+      // Kamera holt langsam auf: von schraeg hinten (Abstand 18) naeher heran (Abstand 10), mit Blick auf Flugzeug und Stadt
+      const back = 18 - 8 * t, off = 12 + 4 * t;
+      return {
+        cam: { x: p.x - along.x * back + side.x * off, y: y + 6 - t * 2, z: p.z - along.z * back + side.z * off },
+        look: { x: p.x + along.x * 6, y: y - 1, z: p.z + along.z * 6 },
+        cmds: [`tp @e[tag=${tag}] ${p.x - 0.5} ${y} ${p.z - 0.5}`,
+          `particle minecraft:cloud ${p.x - along.x * 5} ${y + 0.8} ${p.z - along.z * 5} 0.2 0.1 0.2 0 2 force`],
+      };
+    });
     await mc.send(`kill @e[tag=${tag}]`);
   }
 
