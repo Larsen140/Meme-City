@@ -21,7 +21,7 @@ if (n !== null) {
   await mc.sendAll(clearPlotCommands(cx, cz));
   await mc.sendAll(lampCommands(cx, cz));
   await mc.sendAll(freePlotDecoration(cx, cz, n));
-  await mc.sendAll([`kill @e[tag=mc_plot_${n}]`, `kill @e[tag=mc_pet_${n}]`, `kill @e[tag=mc_gift_pet_${n}]`, freeSignCommand(cx, cz, n)]);
+  await mc.sendAll([`kill @e[tag=mc_plot_${n}]`, `kill @e[tag=mc_pet_${n}]`, `kill @e[tag=mc_gift_pet_${n}]`, `kill @e[tag=mc_pcar_${n}]`, freeSignCommand(cx, cz, n)]);
   await mc.send('kill @e[type=item]');
   await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
   s.nextPlot = n;

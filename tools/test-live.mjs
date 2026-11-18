@@ -39,7 +39,9 @@ ok(msgs.some((m) => m.name === user || m.type === 'say' || m.type === 'mayor' ||
 // Countdown in der Ziel-Leiste
 msgs.length = 0; await wait(5500);
 const g = msgs.filter((m) => m.type === 'goal').pop();
-ok(g && /in \d+:\d\d|BAU-SPRINT/.test(g.next || ''), 'Countdown: ' + (g?.next ?? 'keiner'));
+// Waehrend Duell, Abstimmung oder Verlosung zeigt die Leiste deren Stand statt des Countdowns
+const busy = msgs.find((m) => ['duel', 'vote', 'raffle'].includes(m.type));
+ok((g && /in \d+:\d\d|BAU-SPRINT/.test(g.next || '')) || busy, 'Ziel-Leiste: ' + (g?.next ?? (busy ? busy.type + ' läuft gerade' : 'nichts')));
 // Likes bringen den Gemeinschaftsbau voran
 const c0 = (await (await fetch(base + '/api/state')).json()).community;
 await fetch(base + '/api/sim/like', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user, count: 200 }) });
