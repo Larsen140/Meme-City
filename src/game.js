@@ -36,7 +36,11 @@ export class Game {
         this.broadcast({ type: 'ticker', text: `@${ev.player.name} baut aus: Stufe ${ev.level} · ${levelInfo(ev.level).name}`, highlight: true });
         this.broadcast({ type: 'player', card: this.card(ev.player) });
       }
-      if (ev.type === 'buildDone') { ev.player.builtLevel = ev.level; this.store.save(); }
+      if (ev.type === 'buildDone') {
+        ev.player.builtLevel = ev.level; this.store.save();
+        // grosse Feier-Karte im Overlay (nur bei animiertem Bau, nicht beim stillen Neuaufbau)
+        if (!ev.instant) this.broadcast({ type: 'levelup', name: ev.player.name, avatar: ev.player.avatar, level: ev.level, levelName: levelInfo(ev.level).name, first: ev.level === 1 });
+      }
       if (ev.type === 'showHouse') this.broadcast({ type: 'player', card: this.card(ev.player) });
     };
 

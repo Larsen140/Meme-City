@@ -37,7 +37,7 @@ function findPet(word) {
   return null;
 }
 
-const EVENTS = ['Tornado', 'Meteorregen', 'Feuerwerk-Show', 'Regenbogen', 'Tornado', 'Schneesturm', 'Party'];
+const EVENTS = ['Tornado', 'Meteorregen', 'Tsunami', 'Feuerwerk-Show', 'Regenbogen', 'Tornado', 'Meteorregen', 'Tsunami', 'Schneesturm', 'Party'];
 
 export class Action {
   constructor({ game, builder, speech, broadcast, config = {}, log = console.log }) {
@@ -222,21 +222,76 @@ export class Action {
     const mc = this.mc, b = this.builder;
     await b.camera(0, BASE + 40, 60, 0, BASE + 4, 0);
     if (name === 'Meteorregen') {
-      await mc.send('time set night');
-      for (let i = 0; i < 26; i++) {
-        const x = Math.round((Math.random() - 0.5) * 120), z = Math.round((Math.random() - 0.5) * 120);
-        for (let y = 45; y >= 3; y -= 7) {
-          await mc.send(`particle minecraft:flame ${x + (45 - y) * 0.4} ${BASE + y} ${z} 0.4 0.4 0.4 0.02 40 force`);
-          await mc.send(`particle minecraft:large_smoke ${x + (45 - y) * 0.4} ${BASE + y} ${z} 0.3 0.3 0.3 0.01 15 force`);
-          await sleep(45);
+      // Echte gluehende Gesteinsbrocken fliegen schraeg vom Himmel – reine Optik, es geht NICHTS kaputt
+      // (Block-Anzeigen + Partikel, keine echten Explosionen, keine Bloecke werden veraendert).
+      this.speech.say('Achtung, Meteoriten! Keine Sorge, Meme City ist geschützt!', true);
+      await b.camera(0, BASE + 30, 75, 0, BASE + 8, 0, 2.5);
+      await mc.send('time set 14000');
+      const T = (s) => `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[${-s / 2}f,${-s / 2}f,${-s / 2}f],scale:[${s}f,${s}f,${s}f]}`;
+      const one = async (i) => {
+        const tx = Math.round((Math.random() - 0.5) * 110), tz = Math.round((Math.random() - 0.5) * 70);
+        const sx = tx - 30, sy = BASE + 60, sz = tz - 20; // Start schraeg oben
+        const tag = `mc_meteor_${Date.now()}_${i}`, size = 3.5 + Math.random() * 2.5;
+        await mc.send(`summon block_display ${sx} ${sy} ${sz} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:24,brightness:{sky:15,block:15},block_state:"minecraft:magma_block",${T(size)}}`);
+        await mc.send(`summon block_display ${sx} ${sy} ${sz} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:24,brightness:{sky:15,block:15},block_state:"minecraft:shroomlight",${T(size * 0.7)}}`);
+        await sleep(120);
+        await mc.send(`tp @e[tag=${tag}] ${tx} ${BASE + 1} ${tz}`); // fliegt in 1,2 s weich herunter
+        // Feuerschweif entlang der Flugbahn
+        for (let k = 0; k < 6; k++) {
+          const f = k / 6, px = sx + (tx - sx) * f, py = sy + (BASE + 1 - sy) * f, pz = sz + (tz - sz) * f;
+          await mc.send(`particle minecraft:flame ${px.toFixed(1)} ${py.toFixed(1)} ${pz.toFixed(1)} 0.6 0.6 0.6 0.03 30 force`);
+          await mc.send(`particle minecraft:campfire_cosy_smoke ${px.toFixed(1)} ${py.toFixed(1)} ${pz.toFixed(1)} 0.4 0.4 0.4 0.01 6 force`);
+          await sleep(200);
         }
-        await mc.send(`particle minecraft:explosion_emitter ${x} ${BASE + 1} ${z} 0 0 0 0 1 force`);
-        await mc.send(`particle minecraft:lava ${x} ${BASE + 1} ${z} 1 0.5 1 0 25 force`);
-        await mc.send(`playsound minecraft:entity.generic.explode master @a ${x} ${BASE} ${z} 3 0.7`);
-        await sleep(250);
-      }
+        // Einschlag: Lichtblitz, Funken, Staubring – ohne Schaden
+        await mc.send(`particle minecraft:flash{color:[1.0,0.6,0.2,1.0]} ${tx} ${BASE + 2} ${tz} 0 0 0 0 1 force`);
+        await mc.send(`particle minecraft:lava ${tx} ${BASE + 1} ${tz} 1.5 0.5 1.5 0 30 force`);
+        await mc.send(`particle minecraft:large_smoke ${tx} ${BASE + 1} ${tz} 2 0.5 2 0.05 40 force`);
+        for (let a = 0; a < 360; a += 30) {
+          const r = 3, ax = tx + Math.cos((a * Math.PI) / 180) * r, az = tz + Math.sin((a * Math.PI) / 180) * r;
+          await mc.send(`particle minecraft:poof ${ax.toFixed(1)} ${BASE + 0.5} ${az.toFixed(1)} 0.2 0.1 0.2 0.08 4 force`);
+        }
+        await mc.send(`playsound minecraft:entity.generic.explode master @a ${tx} ${BASE} ${tz} 3 0.6`);
+        await sleep(400);
+        await mc.send(`kill @e[tag=${tag}]`);
+      };
+      const jobs = [];
+      for (let i = 0; i < 16; i++) { jobs.push(one(i)); await sleep(450); }
+      await Promise.all(jobs);
       await sleep(1500);
       await mc.send('time set noon');
+      this.speech.say('Puh! Alle Meteoriten sind verglüht. Meme City steht noch!');
+    } else if (name === 'Tsunami') {
+      // Riesige Welle rollt ueber die Stadt – nur Optik: Block-Anzeigen + Gischt, kein echtes Wasser
+      this.speech.say('Achtung, Tsunami! Alle festhalten!', true);
+      await b.camera(0, BASE + 26, 95, 0, BASE + 8, 0, 2.5);
+      const tag = `mc_tsunami_${Date.now()}`;
+      const W = (tx, ty, tz, sx, sy, sz) => `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[${tx}f,${ty}f,${tz}f],scale:[${sx}f,${sy}f,${sz}f]}`;
+      // Welle: Abschnitte quer ueber die Stadt (x), sie rollt von hinten (z=-110) nach vorne
+      for (let x = -90; x < 90; x += 20) {
+        const h = 14 + Math.round(Math.random() * 4);
+        await mc.send(`summon block_display ${x} ${BASE} -88 {Tags:["${tag}","mc_gift_tmp"],teleport_duration:40,block_state:"minecraft:blue_stained_glass",${W(0, 0, 0, 20, h, 6)}}`);
+        await mc.send(`summon block_display ${x} ${BASE} -88 {Tags:["${tag}","mc_gift_tmp"],teleport_duration:40,block_state:"minecraft:light_blue_stained_glass",${W(0, h, 1, 20, 3, 5)}}`);
+        await mc.send(`summon block_display ${x} ${BASE} -88 {Tags:["${tag}","mc_gift_tmp"],teleport_duration:40,brightness:{sky:15,block:15},block_state:"minecraft:white_concrete_powder",${W(0, h + 3, 2.5, 20, 1, 3)}}`);
+      }
+      await mc.send(`playsound minecraft:ambient.underwater.enter master @a 0 ${BASE} 0 4 0.5`);
+      await sleep(200);
+      for (let step = 0; step < 5; step++) {
+        await mc.send(`execute as @e[tag=${tag}] at @s run tp @s ~ ~ ~30`);
+        const z = -88 + (step + 1) * 30;
+        for (let x = -90; x <= 90; x += 30) {
+          await mc.send(`particle minecraft:splash ${x} ${BASE + 2} ${z} 10 2 3 0.5 300 force`);
+          await mc.send(`particle minecraft:cloud ${x} ${BASE + 16} ${z} 10 1 2 0.05 30 force`);
+        }
+        await mc.send(`playsound minecraft:weather.rain master @a 0 ${BASE} ${z} 4 0.6`);
+        await sleep(2000);
+      }
+      // Welle sinkt ab und verschwindet
+      await mc.send(`execute as @e[tag=${tag}] at @s run tp @s ~ ~-20 ~10`);
+      await mc.send(`particle minecraft:splash 0 ${BASE + 2} 110 60 2 6 0.5 1500 force`);
+      await sleep(2000);
+      await mc.send(`kill @e[tag=${tag}]`);
+      this.speech.say('Die Welle ist weg, und alles ist noch da! Meme City ist unsinkbar!');
     } else if (name === 'Tornado') {
       // Tornado zieht quer durch die Stadt (nur Partikel – nichts geht kaputt)
       this.speech.say('Achtung! Ein Tornado zieht über Meme City! Haltet euch fest!', true);

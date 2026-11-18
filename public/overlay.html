@@ -285,6 +285,48 @@
      dann komplett verkleinert statt unten abgeschnitten. */
   html { width: 100% !important; height: 100% !important; overflow: hidden !important; background: transparent; }
   body { position: absolute !important; left: 0; top: 0; width: 1080px !important; height: 1920px !important; transform-origin: 0 0; }
+
+  /* ---------- Aufstiegs-Karte (einmalige Animation) ---------- */
+  #levelup { position: absolute; left: 0; right: 0; top: 650px; height: 420px; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; }
+  #levelup.show { animation: lvShow 4.2s ease forwards; }
+  @keyframes lvShow { 0% { opacity: 0; transform: scale(.6); } 8% { opacity: 1; transform: scale(1.08); } 14% { transform: scale(1); } 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.9) translateY(-30px); } }
+  #levelup .burst { position: absolute; width: 520px; height: 520px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,216,77,.55) 0%, rgba(255,61,127,.25) 45%, transparent 70%); }
+  #levelup.show .burst { animation: burst 1.1s ease-out 1; }
+  @keyframes burst { 0% { transform: scale(.2); opacity: 1; } 100% { transform: scale(1.3); opacity: .35; } }
+  #levelup .lv-card { position: relative; text-align: center; padding: 26px 56px 30px; border-radius: 34px;
+    background: linear-gradient(180deg, #ffe066 0%, #ff9f1c 55%, #ff3d7f 100%); border: 5px solid #fff;
+    box-shadow: 0 14px 40px rgba(0,0,0,.45); color: #2a0f3a; min-width: 560px; }
+  #levelup .lv-top { font-size: 34px; font-weight: 800; letter-spacing: 3px; }
+  #levelup .lv-num { font-size: 96px; font-weight: 800; line-height: 1; color: #fff; -webkit-text-stroke: 6px #2a0f3a; paint-order: stroke fill; }
+  #levelup .lv-name { font-size: 46px; font-weight: 800; margin-top: 4px; }
+  #levelup .lv-who { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 12px; font-size: 34px; font-weight: 800; }
+  #levelup .lv-who img, #levelup .lv-who .ava { width: 60px; height: 60px; border-radius: 50%; border: 4px solid #fff; background: #3b3570; object-fit: cover; }
+
+  /* ---------- Laufband neu ---------- */
+  #ticker { height: 96px !important; bottom: 40px !important; left: 24px !important; right: 24px !important; border-radius: 48px; overflow: hidden;
+    background: linear-gradient(90deg, #22165e, #3a2290 60%, #22165e) !important; border: 3px solid rgba(255,255,255,.35) !important; }
+  #ticker .lab { border-radius: 48px 0 0 48px; padding: 0 26px !important; gap: 10px; font-size: 32px !important; }
+  #ticker .lab .dot { width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  #ticker .run { left: 150px !important; right: 24px !important; justify-content: flex-start !important; gap: 16px; font-size: 38px !important; font-weight: 700; color: #fff; }
+  #ticker .run .ic { font-size: 44px; flex: none; }
+  #ticker .run .tx { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  #ticker .run b { color: #ffd84d; font-weight: 800; }
+  #ticker .run b.at { color: #7ff7cf; }
+  #ticker .run.hl { color: #fff; }
+  #ticker .run.hl .tx { color: #ffe9a8; }
+  #ticker .run { transition: opacity .26s ease, transform .26s ease !important; }
+  #ticker .run.out { opacity: 0; transform: translateY(-26px) !important; }
+  #ticker .run.in { animation: tickIn .38s cubic-bezier(.2,1.4,.4,1); }
+  @keyframes tickIn { 0% { opacity: 0; transform: translateY(30px); } 100% { opacity: 1; transform: none; } }
+  #ticker .run.in .ic { animation: icPop .5s cubic-bezier(.2,1.8,.4,1); }
+  @keyframes icPop { 0% { transform: scale(.3) rotate(-20deg); } 100% { transform: none; } }
+
+  /* Laufband: Text laeuft nur innerhalb des Bandes */
+  #tickbox { position: absolute; left: 150px; right: 18px; top: 0; bottom: 0; overflow: hidden; contain: strict; }
+  #ticker .run { position: absolute !important; left: 0 !important; right: auto !important; top: 0; height: 100%; display: flex !important; align-items: center;
+    white-space: nowrap; gap: 16px; transition: none !important; animation: none !important; opacity: 1 !important; will-change: transform; }
+  #ticker .run .tx { overflow: visible !important; text-overflow: clip !important; }
 </style>
 </head>
 <body>
@@ -295,9 +337,9 @@
 <div id="head" class="panel">
   <div id="logo"><span id="cityName">MEME CITY</span><small>DEINE STADT · LIVE</small></div>
   <div class="chips">
-    <div class="chip"><b id="houses">0</b><span>Häuser</span></div>
-    <div class="chip"><b id="citizens">0</b><span>Bürger</span></div>
-    <div class="chip"><b id="pets">0</b><span>Haustiere</span></div>
+    <div class="chip"><b id="houses">0</b><span>🏠 Häuser</span></div>
+    <div class="chip"><b id="citizens">0</b><span>👥 Bürger</span></div>
+    <div class="chip"><b id="pets">0</b><span>🐾 Tiere</span></div>
   </div>
 </div>
 
@@ -316,6 +358,7 @@
 
 <div id="banner" class="panel"></div>
 <div id="almost"></div>
+<div id="levelup"><div class="burst"></div><div class="lv-card"><div class="lv-top"></div><div class="lv-num"></div><div class="lv-name"></div><div class="lv-who"></div></div></div>
 
 <div id="player" class="panel"></div>
 <div id="likestats" class="panel"></div>
@@ -330,7 +373,7 @@
   <div id="bubble" class="panel"></div>
 </div>
 
-<div id="ticker"><div class="lab">LIVE</div><div class="run" id="run">Willkommen in Meme City! Schreib „Haus“ in den Chat!</div></div>
+<div id="ticker"><div class="lab"><span class="dot"></span>LIVE</div><div id="tickbox"><div class="run" id="run"><span class="ic">🏙️</span><span class="tx">Willkommen in Meme City!</span></div></div></div>
 
 <script>
 const $ = (id) => document.getElementById(id);
@@ -496,6 +539,20 @@ function showSupporters(s) {
   statsTimer = setTimeout(() => $('likestats').classList.remove('show'), 9000);
 }
 
+// ---------- Aufstieg / neues Haus ----------
+let lvTimer;
+function showLevelUp(m) {
+  const el = $('levelup');
+  el.querySelector('.lv-top').textContent = m.first ? '🏠 NEUES HAUS!' : '⬆️ AUFGESTIEGEN!';
+  el.querySelector('.lv-num').textContent = m.first ? 'WILLKOMMEN' : 'STUFE ' + m.level;
+  el.querySelector('.lv-name').textContent = m.levelName;
+  el.querySelector('.lv-who').innerHTML = (m.avatar ? ava(m.avatar) : '') + '<span>@' + esc(m.name) + '</span>';
+  el.classList.remove('show'); void el.offsetWidth; el.classList.add('show');
+  confetti(40);
+  clearTimeout(lvTimer);
+  lvTimer = setTimeout(() => el.classList.remove('show'), 4200);
+}
+
 // ---------- Banner ----------
 let bannerTimer;
 function showBanner(b) {
@@ -522,21 +579,46 @@ function showAlmost(c) {
 // staendiger Bewegung nur ~8 Bilder/s fuer das ganze Overlay. Stattdessen wechselt der
 // Text alle paar Sekunden mit kurzem Einblenden – danach ist alles wieder ruhig.
 const tickerQueue = [];
-const tickerDefaults = ['Willkommen in Meme City! 🏙️', 'Schreib „Haus“ in den Chat 🏠', 'Schreib „zeig mein Haus“ ✈️', '„haustier katze“ · „farbe rot“ · „party“ 🎉'];
+// Standard-Texte: [Symbol, Text mit **hervorgehobenen** Stellen]
+const tickerDefaults = [
+  ['🏙️', 'Willkommen in **Meme City** – der Stadt, die ihr baut!'],
+  ['🏠', 'Schreib **Haus** und bekomm dein eigenes Grundstück'],
+  ['✈️', 'Schreib **zeig mein Haus** – die Kamera fliegt hin'],
+  ['🎨', '**farbe rot** streicht dein Dach neu'],
+  ['🐶', '**haustier hund** – dein Tier zieht ein'],
+  ['🎉', '**party** = Feuerwerk an deinem Haus'],
+  ['❤️', 'Jedes **Like** lässt dein Haus wachsen'],
+  ['⚔️', 'Schreib **nord** oder **süd** fürs Team-Duell'],
+  ['❓', 'Frag den Bürgermeister – er antwortet!'],
+];
 let tickerIdx = 0;
 function ticker(text, hl) {
   tickerQueue.push({ text, hl });
   if (tickerQueue.length > 6) tickerQueue.shift();
 }
+// Symbol am Anfang eines Textes abtrennen (z. B. "❤️ @lena hat ...")
+function splitIcon(t) {
+  const m = String(t).match(/^(\p{Extended_Pictographic}[️‍\p{Extended_Pictographic}]*)\s*(.*)$/u);
+  return m ? [m[1], m[2]] : [null, String(t)];
+}
+function fmtTicker(t) {
+  return esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/(@[\w.]+)/g, '<b class="at">$1</b>');
+}
+// Laufband: Text laeuft LANGSAM von rechts nach links durch das Band (nur innerhalb des Bandes,
+// das spart Rechenzeit in LIVE Studio). Danach kommt die naechste Meldung.
+const TICK_SPEED = 85; // Pixel pro Sekunde (langsam, gut lesbar)
 function nextTicker() {
-  const item = tickerQueue.shift() || { text: tickerDefaults[tickerIdx++ % tickerDefaults.length] };
-  const run = $('run');
-  run.classList.add('out');
-  setTimeout(() => {
-    run.textContent = item.text;
-    run.className = 'run' + (item.hl ? ' hl' : '');
-  }, 250);
-  setTimeout(nextTicker, tickerQueue.length ? 3500 : 5000);
+  let icon, text, hl = false;
+  const item = tickerQueue.shift();
+  if (item) { [icon, text] = splitIcon(item.text); hl = item.hl; icon = icon || (hl ? '⭐' : '📣'); }
+  else { [icon, text] = tickerDefaults[tickerIdx++ % tickerDefaults.length]; }
+  const run = $('run'), box = $('tickbox');
+  run.innerHTML = `<span class="ic">${icon}</span><span class="tx">${fmtTicker(text)}</span>`;
+  run.className = 'run' + (hl ? ' hl' : '');
+  const W = box.clientWidth, w = run.scrollWidth;
+  const dur = ((W + w) / TICK_SPEED) * 1000;
+  const anim = run.animate([{ transform: `translateX(${W}px)` }, { transform: `translateX(${-w}px)` }], { duration: dur, easing: 'linear' });
+  anim.onfinish = () => setTimeout(nextTicker, 300);
 }
 nextTicker();
 
@@ -705,6 +787,7 @@ function connect() {
     else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);
+    else if (m.type === 'levelup') showLevelUp(m);
     else if (m.type === 'ticker') ticker(m.text, m.highlight);
     else if (m.type === 'speak') talk(m.on, m.text, m.silent);
     else if (m.type === 'likes') likeBubble(m);

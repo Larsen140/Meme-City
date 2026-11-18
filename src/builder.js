@@ -212,7 +212,8 @@ export class Builder {
       'time set noon', 'weather clear 1000000',
       `setworldspawn 0 ${BASE} 0`, 'forceload add -32 -32 31 31',
     ]);
-    await mc.sendAll(plazaCommands());
+    // alter Platz nur, solange der neue Brunnen (Meereslaterne oben) noch nicht steht
+    if (!/passed/.test(await mc.send(`execute if block 0 ${BASE + 6} 0 sea_lantern`))) await mc.sendAll(plazaCommands());
     await mc.send('kill @e[tag=mc_title]');
     await mc.send(signCommand(0, BASE + 8, 0, ['mc_title'], 6, '{text:"MEME CITY",color:"#FFC93C",bold:true}'));
     await mc.send('kill @e[type=item]');
