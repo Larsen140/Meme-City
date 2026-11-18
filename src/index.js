@@ -104,6 +104,7 @@ server.listen(config.webPort || 3000, async () => {
   }
   await builder.setupWorld();
   await builder.cameraOverview();
+  game.ensureFreePlots();
   broadcast({ type: 'mc', connected: true });
   if (config.autoConnectTikTok !== false) tiktok.connect();
 });

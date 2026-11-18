@@ -105,9 +105,22 @@ export class Game {
 
   // ---------- Haus ----------
 
+  /** Sorgt dafuer, dass immer genug freie Grundstuecke vorbereitet sind. */
+  ensureFreePlots() {
+    const d = this.store.data;
+    const want = this.cfg.freePlots ?? 120;
+    const from = Math.max(d.preparedUntil || 0, d.nextPlot);
+    if (from - d.nextPlot >= want / 2) return;
+    const to = d.nextPlot + want;
+    d.preparedUntil = to;
+    this.store.save();
+    this.builder.enqueue({ type: 'fn', fn: () => this.builder.prepareFreePlots(from, to) });
+  }
+
   claimHouse(p, reason = 'chat') {
     if (p.plot !== null) return false;
     p.plot = this.store.data.nextPlot++;
+    this.ensureFreePlots();
     p.level = levelForPoints(p.points);
     this.store.save();
     this.builder.enqueue({ type: 'build', player: p });

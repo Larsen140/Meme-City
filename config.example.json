@@ -18,5 +18,6 @@
   "speech": true,
   "autoConnectTikTok": true,
   "voicePitch": "-2Hz",
-  "voiceVolume": 1
+  "voiceVolume": 1,
+  "freePlots": 120
 }

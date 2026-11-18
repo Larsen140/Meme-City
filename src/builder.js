@@ -70,7 +70,7 @@ export class Builder {
   async setupWorld() {
     const mc = this.mc;
     await mc.sendAll([
-      'gamerule advance_time false', 'gamerule advance_weather false', 'gamerule spawn_mobs false',
+      'gamerule advance_time false', 'gamerule block_drops false', 'gamerule advance_weather false', 'gamerule spawn_mobs false',
       'time set noon', 'weather clear',
       `setworldspawn 0 ${BASE} 0`, 'forceload add -32 -32 31 31',
     ]);
@@ -79,6 +79,29 @@ export class Builder {
     await mc.send(`summon text_display 0 ${BASE + 7} 0 {Tags:["mc_title"],billboard:"center",background:0,shadow:1b,` +
       `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[5f,5f,5f]},` +
       `text:{text:"MEME CITY",color:"gold",bold:true}}`);
+    await mc.send('kill @e[type=item]');
+  }
+
+  /** Freie Grundstuecke vorbereiten: Strassen, Rand und Schild „FREI“. */
+  async prepareFreePlots(from, to) {
+    const mc = this.mc;
+    for (let n = from; n < to; n++) {
+      const { x: cx, z: cz } = plotCenter(n);
+      const a = cx - HALF - 5, b = cx + HALF + 5, e = cz - HALF - 5, f = cz + HALF + 5;
+      await mc.send(`forceload add ${a} ${e} ${b} ${f}`);
+      await mc.sendAll(roadCommands(cx, cz));
+      await mc.sendAll([
+        `fill ${cx - HALF} ${BASE - 1} ${cz - HALF} ${cx + HALF} ${BASE - 1} ${cz - HALF} smooth_stone`,
+        `fill ${cx - HALF} ${BASE - 1} ${cz + HALF} ${cx + HALF} ${BASE - 1} ${cz + HALF} smooth_stone`,
+        `fill ${cx - HALF} ${BASE - 1} ${cz - HALF} ${cx - HALF} ${BASE - 1} ${cz + HALF} smooth_stone`,
+        `fill ${cx + HALF} ${BASE - 1} ${cz - HALF} ${cx + HALF} ${BASE - 1} ${cz + HALF} smooth_stone`,
+        `kill @e[tag=mc_plot_${n}]`,
+        `summon text_display ${cx} ${BASE + 2} ${cz} {Tags:["mc_plot_${n}","mc_plot"],billboard:"center",background:1426063360,` +
+          `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[2.5f,2.5f,2.5f]},` +
+          `text:{text:"FREI\\n",color:"green",bold:true,extra:[{text:"Grundstück ${n + 1}",color:"white",bold:false}]}}`,
+      ]);
+      await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
+    }
   }
 
   // ---------- Namensschild ----------
@@ -125,7 +148,7 @@ export class Builder {
     await mc.sendAll(roadCommands(cx, cz));
 
     if (instant) {
-      await mc.sendAll(clearPlotCommands(cx, cz));
+      await mc.sendAll(clearPlotCommands(cx, cz)); await mc.send('kill @e[type=item]');
       for (const l of plan.layers) await mc.sendAll(l.cmds);
       await mc.sendAll(gardenCommands(cx, cz, plan));
       await this.nameTag(player, plan.top);
@@ -143,7 +166,7 @@ export class Builder {
     await mc.send(`particle minecraft:cloud ${cx} ${BASE + 2} ${cz} 4 3 4 0.08 400 force`);
     await mc.send(`playsound minecraft:entity.generic.explode master @a ${cx} ${BASE + 3} ${cz} 2 0.8`);
     await sleep(400);
-    await mc.sendAll(clearPlotCommands(cx, cz));
+    await mc.sendAll(clearPlotCommands(cx, cz)); await mc.send('kill @e[type=item]');
     await sleep(900);
     // 3. Geruest und Kran
     await mc.sendAll(scaffoldCommands(cx, cz, plan, plan.top));
