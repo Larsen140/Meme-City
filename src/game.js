@@ -36,7 +36,7 @@ export class Game {
     speech.onStart = (text) => this.broadcast({ type: 'speak', text, on: true });
     speech.onEnd = () => this.broadcast({ type: 'speak', on: false });
 
-    setInterval(() => this.idle(), 10_000); // Buergermeister redet regelmaessig mit den Zuschauern
+    setInterval(() => this.idle(), 30_000); // Buergermeister redet regelmaessig mit den Zuschauern
 
     this.sessionLikes = new Map(); // Likes je Zuschauer in diesem Stream
     this.likeLog = [];             // fuer "Likes pro Minute"
@@ -154,7 +154,7 @@ export class Game {
     if (reason === 'follow') lines.push(`Danke fürs Folgen, ${n}! Dafür gibt es ein eigenes Haus.`);
     if (reason === 'gift') lines.push(`${n} schickt ein Geschenk und bekommt sofort ein Haus!`);
     this.speech.say(pick(lines), true);
-    if (Math.random() < 0.5) this.speech.say('Mit Likes und Geschenken baust du es jetzt Stufe für Stufe aus!');
+    if (Math.random() < 0.5) this.speech.say('Schreib zeig mein Haus, dann fliegen wir hin!');
     this.broadcast({ type: 'ticker', text: `Neu in der Stadt: @${p.name} (Grundstück ${p.plot + 1})`, highlight: true });
     this.broadcast({ type: 'player', card: this.card(p) });
     this.pushState();
@@ -213,6 +213,7 @@ export class Game {
   onChat(user, text) {
     const p = this.player(user);
     if (!p) return;
+    if (this.action?.onChat(p, text)) { this.store.save(); return; }
     const t = text.toLowerCase();
     if (/(zeig|wo ist|wo steht|show)/.test(t) && /(haus|house)/.test(t)) {
       if (p.plot === null) {
@@ -239,6 +240,7 @@ export class Game {
     const p = this.player(user);
     if (!p) return;
     const coins = (gift.diamonds || 0) * (gift.count || 1);
+    this.action?.onGift(p, coins);
     p.coins += coins;
     this.store.data.totals.coins += coins;
     this.claimHouse(p, 'gift');
@@ -276,6 +278,7 @@ export class Game {
     p.likeRest -= up * this.likesPerPoint;
     this.broadcast({ type: 'likes', count, avatar: p.avatar, name: p.name });
     if (up > 0) this.addPoints(p, up);
+    this.action?.onLike(p, count);
     this.thankLiker(p);
     if (p.plot === null && !this.checkedNoHouse.has(p.id) && p.likes >= 30) {
       this.checkedNoHouse.add(p.id);
@@ -327,32 +330,27 @@ export class Game {
   idle() {
     if (this.speech.speaking || this.speech.queue.length || this.builder.busy) return;
     const s = this.state();
-    const likesFor2 = pointsForLevel(2) * this.likesPerPoint;
+    // WICHTIG (TikTok-Richtlinien): Der Buergermeister fordert NIE automatisch zu Geschenken auf.
+    // Er erzaehlt von der Stadt, erklaert Chat-Befehle und stellt Fragen. Auf Geschenke reagiert er nur.
     const lines = [
       'Schreib Haus in den Chat und du bekommst ein eigenes Grundstück in Meme City!',
-      `Mit Likes baust du dein Haus aus! ${this.likesPerPoint} Likes sind ein Upgrade-Punkt.`,
-      'Jedes Geschenk ist ein Turbo für dein Haus. Ein Coin gleich ein Punkt!',
-      `Schon ${fmt(likesFor2)} Likes und deine Hütte wird zur Holzhütte. Tippt mal schön auf den Bildschirm!`,
-      'Likes oder Geschenke, beides bringt dein Haus auf die nächste Stufe. Bis hoch zum Königspalast!',
       'Schreib: Zeig mein Haus, dann fliegen wir hin.',
-      'Wer will Ehrenbürgermeister werden? Der größte Unterstützer bekommt den Titel!',
+      'Mit farbe rot, farbe blau oder einer anderen Farbe streichst du dein Dach neu!',
+      'Schreib haustier katze, hund oder fuchs, dann zieht ein Haustier in deinen Garten.',
+      'Schreib party, dann feiern wir bei dir zu Hause!',
       'Wie findet ihr die Stadt bis jetzt? Schreibt es in den Chat!',
-      'Folgt dem Kanal, dann bekommt ihr automatisch ein Haus geschenkt!',
-      'Teilt den Stream mit Freunden, dann wird Meme City noch größer!',
+      'Seid ihr Team Nord oder Team Süd? Schreibt es in den Chat!',
+      'Welches Gebäude soll Meme City als nächstes bekommen? Schreibt eure Ideen!',
       `Meme City hat schon ${fmt(s.houses)} Häuser! Fehlt deins noch?`,
-      'Ab einer Rose regnet es Herzen, ab einem Donut gibt es Feuerwerk, und beim Universe steigt die große Party!',
+      'Schaut mal, wie die Autos durch die Straßen fahren. Hier ist richtig was los!',
     ];
-    if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Wer holt sich den Thron?`);
-    if (s.community) lines.push(`Gemeinschaftsbau ${s.community.name}: ${fmt(s.community.progress)} von ${fmt(s.community.goal)}. Jedes Like und jedes Geschenk zählt mit!`);
-    // Jemanden direkt ansprechen, der kurz vor der naechsten Stufe ist
-    const close = this.ranking().map((p) => this.card(p)).filter((c) => c.nextLevel && c.progress >= 0.5).sort((a, b) => b.progress - a.progress)[0];
-    if (close) lines.push(`${close.nick || close.name}, dir fehlen nur noch ${fmt(close.likesNeeded)} Likes bis zum ${close.nextName}! Wer hilft mit?`);
+    if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Respekt!`);
+    if (s.community) lines.push(`Der Gemeinschaftsbau ${s.community.name} steht bei ${fmt(s.community.progress)} von ${fmt(s.community.goal)}.`);
     this.speech.say(pick(lines));
     this.broadcast({ type: 'ticker', text: pick([
       'Schreib „Haus“ in den Chat und zieh nach Meme City!',
-      `❤️ ${this.likesPerPoint} Likes = 1 Upgrade-Punkt · 🎁 1 Coin = 1 Punkt`,
-      'Likes und Geschenke bauen dein Haus aus – bis zum Königspalast!',
       'Schreib „Zeig mein Haus“ und die Kamera fliegt hin!',
+      'Chat-Befehle: „farbe rot“ · „haustier katze“ · „party“ · „nord“ / „süd“',
       s.top[0] ? `👑 Platz 1: @${s.top[0].name} (Stufe ${s.top[0].level})` : 'Wer wird Platz 1?',
     ]) });
   }

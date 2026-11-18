@@ -205,7 +205,8 @@ export class Builder {
     const mc = this.mc;
     const { x: cx, z: cz } = plotCenter(player.plot);
     const level = player.level;
-    const plan = housePlan(cx, cz, level);
+    // eigene Dachfarbe (Chat-Befehl "farbe")
+    const plan = housePlan(cx, cz, player.color ? { ...levelInfo(level), roof: `${player.color}_concrete` } : level);
     const height = plan.top - BASE;
     const a = cx - HALF - 5, b = cx + HALF + 5, e = cz - HALF - 5, f = cz + HALF + 5;
 

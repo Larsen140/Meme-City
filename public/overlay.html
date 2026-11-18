@@ -32,7 +32,7 @@
   .chip span { font-size: 18px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
 
   /* ---------- Bestenliste ---------- */
-  #board { position: absolute; top: 200px; left: 36px; width: 430px; padding: 18px 20px; }
+  #board { position: absolute; top: 262px; left: 36px; width: 370px; padding: 18px 20px; }
   .ptitle { font-size: 24px; font-weight: 800; letter-spacing: 3px; color: var(--gold); margin-bottom: 8px; }
   .row { display: flex; align-items: center; gap: 10px; padding: 5px 4px; font-size: 24px; border-radius: 12px; }
   .row .pos { width: 34px; text-align: center; font-weight: 800; color: var(--muted); }
@@ -42,7 +42,7 @@
   .row .lv { font-size: 20px; color: var(--mint); white-space: nowrap; }
 
   /* ---------- Rechts: Ehrenbuergermeister + Gemeinschaftsbau ---------- */
-  #right { position: absolute; top: 200px; right: 36px; width: 520px; display: flex; flex-direction: column; gap: 16px; }
+  #right { position: absolute; top: 262px; right: 36px; width: 370px; display: flex; flex-direction: column; gap: 16px; }
   #honor { padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
   #honor img, #honor .ava { width: 74px; height: 74px; border-radius: 50%; border: 4px solid var(--gold); object-fit: cover; background: #3b3570; }
   #honor .lbl { font-size: 19px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
@@ -54,10 +54,29 @@
   #gifts { padding: 14px 20px; }
   #gifts .g { display: flex; align-items: center; gap: 10px; font-size: 22px; padding: 3px 0; }
   #gifts .g .ic { width: 34px; text-align: center; font-size: 26px; }
-  #gifts .g b { min-width: 150px; }
+  #gifts .g { font-size: 20px; }
+  #gifts .g b { min-width: 0; }
+  #gifts .tip { font-size: 17px; }
+  #honor .nm { font-size: 26px; }
+  #honor img, #honor .ava { width: 60px; height: 60px; }
+  .row { font-size: 22px; }
   #gifts .g span { color: var(--mint); font-weight: 700; margin-left: auto; white-space: nowrap; }
   #gifts .tip { font-size: 19px; color: var(--muted); margin-top: 4px; }
   #comm .nums { display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; }
+
+  /* ---------- Like-Ziel / Duell ---------- */
+  #goal { position: absolute; top: 178px; left: 36px; right: 36px; height: 68px; padding: 0 22px; display: flex; align-items: center; gap: 16px; opacity: 0; transition: opacity .4s; }
+  #goal.show { opacity: 1; }
+  #goal .lab { font-size: 26px; font-weight: 800; white-space: nowrap; }
+  #goal .lab b { color: var(--gold); }
+  #goal .gbar { flex: 1; height: 28px; border-radius: 14px; background: rgba(255,255,255,.1); overflow: hidden; position: relative; }
+  #goal .gbar i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 14px; background: linear-gradient(90deg, var(--pink), var(--gold)); transition: width .6s; }
+  #goal .num { font-size: 26px; font-weight: 800; white-space: nowrap; }
+  #goal.duel { border-color: #fff; }
+  #goal.duel .gbar { background: #ff4d5e; }
+  #goal.duel .gbar i { background: #3d8bff; border-radius: 0; }
+  #goal .nord { color: #6fb0ff; } #goal .sued { color: #ff6b78; }
+  #goal .time { font-size: 30px; font-weight: 800; color: var(--gold); min-width: 70px; text-align: right; }
 
   /* ---------- Pause ---------- */
   #pause { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .8s;
@@ -147,6 +166,8 @@
   </div>
 </div>
 
+<div id="goal" class="panel"></div>
+
 <div id="board" class="panel">
   <div class="ptitle">🏆 TOP 10</div>
   <div id="rows"></div>
@@ -205,7 +226,7 @@ function renderGifts(s) {
     ['🫶', 'Herz-Hände', '+100 UP · Show'],
     ['🌌', 'Universe', '+1000 UP · PARTY'],
   ];
-  $('gifts').innerHTML = `<div class="ptitle">🎁 GESCHENKE = PUNKTE</div>` +
+  $('gifts').innerHTML = `<div class="ptitle">🎁 GESCHENK-EFFEKTE</div>` +
     rows.map(([ic, n, e]) => `<div class="g"><div class="ic">${ic}</div><b>${n}</b><span>${e}</span></div>`).join('') +
     `<div class="tip">1 Coin = 1 UP · ${s.likesPerPoint || 50} Likes = 1 UP · UP bauen dein Haus aus!</div>`;
 }
@@ -235,6 +256,24 @@ function showLikeStats(s) {
   $('likestats').classList.add('show');
   clearTimeout(statsTimer);
   statsTimer = setTimeout(() => $('likestats').classList.remove('show'), 9000);
+}
+
+// ---------- Like-Ziel und Duell ----------
+let duelUntil = 0;
+function showGoal(g) {
+  if (Date.now() < duelUntil) return;
+  const el = $('goal');
+  el.className = 'panel show';
+  const pct = Math.min(100, (100 * g.cur) / g.target);
+  el.innerHTML = `<div class="lab">🎯 LIKE-ZIEL: <b>${esc(g.name)}</b></div><div class="gbar"><i style="width:${pct}%"></i></div><div class="num">${fmt(g.cur)} / ${fmt(g.target)}</div>`;
+}
+function showDuel(d) {
+  const el = $('goal');
+  duelUntil = Date.now() + (d.end ? 8000 : 3000);
+  el.className = 'panel show duel';
+  const tot = d.nord + d.sued, pct = tot ? (100 * d.nord) / tot : 50;
+  const right = d.end ? (d.winner ? (d.winner === 'nord' ? '🏆 NORD' : '🏆 SÜD') : 'PATT') : `⏱ ${Math.floor(d.left / 60)}:${String(d.left % 60).padStart(2, '0')}`;
+  el.innerHTML = `<div class="lab nord">🔵 NORD ${fmt(d.nord)}</div><div class="gbar"><i style="width:${pct}%"></i></div><div class="lab sued">${fmt(d.sued)} SÜD 🔴</div><div class="time">${right}</div>`;
 }
 
 // ---------- Banner ----------
@@ -410,6 +449,8 @@ function connect() {
     if (m.type === 'state') { renderState(m.state); renderGifts(m.state); }
     else if (m.type === 'player') { $('likestats').classList.remove('show'); showPlayer(m.card); }
     else if (m.type === 'likestats') showLikeStats(m);
+    else if (m.type === 'goal') showGoal(m);
+    else if (m.type === 'duel') showDuel(m);
     else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);
