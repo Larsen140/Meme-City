@@ -12,6 +12,7 @@ import { Store } from './store.js';
 import { Game } from './game.js';
 import { TikTok } from './tiktok.js';
 import { CityLife } from './life.js';
+import { Music } from './music.js';
 import { plotCenter, roadCommands, lampCommands } from './city.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -52,6 +53,15 @@ app.get('/skin.png', async (req, res) => {
 const store = new Store(path.join(root, 'data', 'save.json'));
 const game = new Game({ store, builder, speech, config, broadcast, log });
 const tiktok = new TikTok(config.tiktokName, game, log);
+
+// Hintergrundmusik, beim Sprechen des Buergermeisters leiser
+const music = new Music({
+  file: path.join(root, 'assets', 'musik', 'meme-city.wav'), dataDir: path.join(root, 'data'),
+  volume: config.musicVolume ?? 0.2, duckVolume: config.musicDuckVolume ?? 0.06, enabled: config.music !== false,
+}, log);
+const speakStart = speech.onStart, speakEnd = speech.onEnd;
+speech.onStart = (t) => { music.duck(true); speakStart(t); };
+speech.onEnd = (t) => { music.duck(false); speakEnd(t); };
 tiktok.onStatus = (s) => broadcast({ type: 'tiktok', status: s });
 
 const VERSION = String(Date.now()); // aendert sich bei jedem Neustart -> Overlay laedt sich selbst neu

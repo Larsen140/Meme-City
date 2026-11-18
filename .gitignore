@@ -3,3 +3,4 @@ server/
 data/
 config.json
 *.log
+assets/musik/*.wav

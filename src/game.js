@@ -36,7 +36,7 @@ export class Game {
     speech.onStart = (text) => this.broadcast({ type: 'speak', text, on: true });
     speech.onEnd = () => this.broadcast({ type: 'speak', on: false });
 
-    setInterval(() => this.idle(), 75_000);
+    setInterval(() => this.idle(), 25_000); // Buergermeister redet regelmaessig mit den Zuschauern
 
     this.sessionLikes = new Map(); // Likes je Zuschauer in diesem Stream
     this.likeLog = [];             // fuer "Likes pro Minute"
@@ -154,6 +154,7 @@ export class Game {
     if (reason === 'follow') lines.push(`Danke fürs Folgen, ${n}! Dafür gibt es ein eigenes Haus.`);
     if (reason === 'gift') lines.push(`${n} schickt ein Geschenk und bekommt sofort ein Haus!`);
     this.speech.say(pick(lines), true);
+    if (Math.random() < 0.5) this.speech.say('Mit Likes und Geschenken baust du es jetzt Stufe für Stufe aus!');
     this.broadcast({ type: 'ticker', text: `Neu in der Stadt: @${p.name} (Grundstück ${p.plot + 1})`, highlight: true });
     this.broadcast({ type: 'player', card: this.card(p) });
     this.pushState();
@@ -275,6 +276,7 @@ export class Game {
     p.likeRest -= up * this.likesPerPoint;
     this.broadcast({ type: 'likes', count, avatar: p.avatar, name: p.name });
     if (up > 0) this.addPoints(p, up);
+    this.thankLiker(p);
     if (p.plot === null && !this.checkedNoHouse.has(p.id) && p.likes >= 30) {
       this.checkedNoHouse.add(p.id);
       this.speech.say(`Kurzer Check: ${spoken(p)} hat noch kein Haus. Schreib Haus in den Chat!`);
@@ -323,18 +325,70 @@ export class Game {
   // ---------- Leerlauf: Buergermeister erzaehlt was ----------
 
   idle() {
-    if (this.speech.speaking || this.builder.busy) return;
+    if (this.speech.speaking || this.speech.queue.length || this.builder.busy) return;
     const s = this.state();
+    const likesFor2 = pointsForLevel(2) * this.likesPerPoint;
     const lines = [
       'Schreib Haus in den Chat und du bekommst ein eigenes Grundstück in Meme City!',
-      'Jedes Like bringt dich deiner nächsten Stufe näher.',
+      `Mit Likes baust du dein Haus aus! ${this.likesPerPoint} Likes sind ein Upgrade-Punkt.`,
+      'Jedes Geschenk ist ein Turbo für dein Haus. Ein Coin gleich ein Punkt!',
+      `Schon ${fmt(likesFor2)} Likes und deine Hütte wird zur Holzhütte. Tippt mal schön auf den Bildschirm!`,
+      'Likes oder Geschenke, beides bringt dein Haus auf die nächste Stufe. Bis hoch zum Königspalast!',
       'Schreib: Zeig mein Haus, dann fliegen wir hin.',
-      `Meme City hat schon ${fmt(s.houses)} Häuser!`,
+      'Wer will Ehrenbürgermeister werden? Der größte Unterstützer bekommt den Titel!',
+      'Wie findet ihr die Stadt bis jetzt? Schreibt es in den Chat!',
+      'Folgt dem Kanal, dann bekommt ihr automatisch ein Haus geschenkt!',
+      'Teilt den Stream mit Freunden, dann wird Meme City noch größer!',
+      `Meme City hat schon ${fmt(s.houses)} Häuser! Fehlt deins noch?`,
+      'Ab einer Rose regnet es Herzen, ab einem Donut gibt es Feuerwerk, und beim Universe steigt die große Party!',
     ];
-    if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}.`);
-    if (s.community) lines.push(`Gemeinschaftsbau ${s.community.name}: ${fmt(s.community.progress)} von ${fmt(s.community.goal)}. Weiter so!`);
+    if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Wer holt sich den Thron?`);
+    if (s.community) lines.push(`Gemeinschaftsbau ${s.community.name}: ${fmt(s.community.progress)} von ${fmt(s.community.goal)}. Jedes Like und jedes Geschenk zählt mit!`);
+    // Jemanden direkt ansprechen, der kurz vor der naechsten Stufe ist
+    const close = this.ranking().map((p) => this.card(p)).filter((c) => c.nextLevel && c.progress >= 0.5).sort((a, b) => b.progress - a.progress)[0];
+    if (close) lines.push(`${close.nick || close.name}, dir fehlen nur noch ${fmt(close.likesNeeded)} Likes bis zum ${close.nextName}! Wer hilft mit?`);
     this.speech.say(pick(lines));
-    this.broadcast({ type: 'ticker', text: pick(['Willkommen in Meme City!', 'Schreib „Haus“ in den Chat!', s.top[0] ? `Platz 1: @${s.top[0].name}` : 'Wer wird Platz 1?']) });
+    this.broadcast({ type: 'ticker', text: pick([
+      'Schreib „Haus“ in den Chat und zieh nach Meme City!',
+      `❤️ ${this.likesPerPoint} Likes = 1 Upgrade-Punkt · 🎁 1 Coin = 1 Punkt`,
+      'Likes und Geschenke bauen dein Haus aus – bis zum Königspalast!',
+      'Schreib „Zeig mein Haus“ und die Kamera fliegt hin!',
+      s.top[0] ? `👑 Platz 1: @${s.top[0].name} (Stufe ${s.top[0].level})` : 'Wer wird Platz 1?',
+    ]) });
+  }
+
+  /** Zuschauer kommt in den LIVE: ab und zu persoenlich begruessen. */
+  onJoin(user) {
+    const p = this.player(user);
+    if (!p) return;
+    const now = Date.now();
+    if (now - (this.lastGreet || 0) < 20_000 || this.speech.queue.length) return;
+    this.lastGreet = now;
+    const n = spoken(p);
+    if (p.plot !== null) {
+      this.speech.say(pick([`Willkommen zurück, ${n}! Dein ${levelInfo(p.level).name} wartet schon.`, `Da ist ja ${n}! Schön, dass du wieder da bist.`]));
+    } else {
+      this.speech.say(pick([`Hallo ${n}! Schreib Haus in den Chat, dann bekommst du ein Grundstück.`, `Willkommen in Meme City, ${n}! Willst du hier wohnen? Schreib einfach Haus.`, `Hey ${n}! Hier baut jeder sein eigenes Haus. Schreib Haus in den Chat!`]));
+    }
+  }
+
+  onShare(user) {
+    const p = this.player(user);
+    if (!p) return;
+    this.broadcast({ type: 'ticker', text: `📣 Danke fürs Teilen, @${p.name}!`, highlight: true });
+    if (!this.speech.queue.length) this.speech.say(`Danke fürs Teilen, ${spoken(p)}! So wächst die Stadt.`);
+  }
+
+  /** Bedankt sich ab und zu bei aktiven Likern (nicht bei jedem Like). */
+  thankLiker(p) {
+    const now = Date.now();
+    if (now - (this.lastLikeThanks || 0) < 30_000 || this.speech.speaking || this.speech.queue.length) return;
+    this.lastLikeThanks = now;
+    const c = this.card(p), n = spoken(p);
+    const lines = [`Danke für die Likes, ${n}!`, `${n} tippt wie verrückt! Weiter so!`];
+    if (c.hasHouse && c.nextLevel) lines.push(`${n}, noch ${fmt(c.likesNeeded)} Likes und dein Haus wird zum ${c.nextName}!`);
+    if (!c.hasHouse) lines.push(`${n}, danke für die Likes! Schreib Haus, dann zählen sie für dein eigenes Haus.`);
+    this.speech.say(pick(lines));
   }
 }
 
