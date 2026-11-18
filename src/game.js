@@ -244,9 +244,51 @@ export class Game {
     } else if (/\b(haus|house)\b/.test(t)) {
       if (!this.claimHouse(p, 'chat')) {
         this.broadcast({ type: 'player', card: this.card(p) });
+        if (this.chatReplyReady(p, 20_000)) this.speech.say(pick([`${spoken(p)}, du wohnst schon in Meme City! Schreib zeig mein Haus.`, `${spoken(p)}, dein ${levelInfo(p.level).name} steht schon!`]));
       }
+    } else {
+      this.replyToChat(p, text);
     }
     this.store.save();
+  }
+
+  /** Darf der Buergermeister gerade auf eine Chat-Nachricht antworten? (nicht zu oft, nicht immer derselben Person) */
+  chatReplyReady(p, perUser = 45_000) {
+    const now = Date.now();
+    if (this.speech.queue.length >= 2) return false;
+    if (now - (this.lastChatReply || 0) < 8_000) return false;
+    if (now - (p._lastReply || 0) < perUser) return false;
+    this.lastChatReply = now; p._lastReply = now;
+    return true;
+  }
+
+  /** Der Buergermeister reagiert auf normale Chat-Nachrichten – so wird der LIVE wirklich interaktiv. */
+  replyToChat(p, text) {
+    const t = text.toLowerCase().trim();
+    const n = spoken(p);
+    if (!t || /https?:|www\.|\.com|\.de\b/.test(t)) return; // keine Links vorlesen
+    const BAD = /(fick|fuck|hure|nutte|nazi|hitler|schlampe|wichser|hurensohn|missgeburt|arsch|scheiß|scheiss|bitch|nigg|schwuchtel|spast|behindert|töte|kill dich|sex|porn|nackt)/;
+    if (BAD.test(t)) return;
+    let line = null;
+    if (/\b(hi|hallo|hey|moin|servus|hello|huhu|na|guten (tag|abend|morgen)|grüß|gruss|yo)\b/.test(t)) {
+      line = p.plot === null
+        ? pick([`Hallo ${n}! Willkommen in Meme City. Schreib Haus, dann bekommst du ein Grundstück!`, `Hey ${n}! Schön, dass du da bist. Willst du hier wohnen? Schreib Haus!`])
+        : pick([`Hallo ${n}! Dein ${levelInfo(p.level).name} wartet schon auf dich.`, `Hey ${n}, willkommen zurück in Meme City!`]);
+    } else if (/(tschüss|tschüß|bye|ciao|gute nacht|bis morgen|bis später|muss los)/.test(t)) {
+      line = pick([`Tschüss ${n}, bis zum nächsten Mal!`, `Mach's gut, ${n}! Dein Haus bleibt stehen.`]);
+    } else if (/(wie|was|wo|warum|wann|kann man|geht das|funktioniert)/.test(t) && /\?|wie|funktioniert/.test(t)) {
+      line = p.plot === null
+        ? `${n}, ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Haus. Mit Likes wird es größer!`
+        : pick([`${n}, mit Likes wächst dein Haus. Und schreib zum Beispiel farbe rot oder haustier katze!`, `${n}, gute Frage! Schreib zeig mein Haus, party oder haustier hund, dann passiert was.`]);
+    } else if (/(cool|geil|nice|krass|stark|schön|schoen|toll|lustig|lol|haha|xd|wow|mega|beste|liebe)/.test(t)) {
+      line = pick([`Danke ${n}, freut mich!`, `${n} findet's gut, das freut den Bürgermeister!`, `Haha, danke ${n}!`]);
+    } else if (/(langweilig|blöd|bloed|doof|schlecht|lame)/.test(t)) {
+      line = `${n}, dann bau doch mit! Schreib Haus oder party, dann ist hier gleich mehr los.`;
+    } else if (t.length >= 3 && t.length <= 70 && Math.random() < 0.35) {
+      // sonst ab und zu die Nachricht vorlesen, damit sich jeder gesehen fuehlt
+      line = `${n} sagt: ${text.replace(/[^\p{L}\p{N} ,.!?'-]/gu, '').trim()}`;
+    }
+    if (line && this.chatReplyReady(p)) this.speech.say(line);
   }
 
   onFollow(user) {
@@ -369,6 +411,8 @@ export class Game {
       'Welches Gebäude soll Meme City als nächstes bekommen? Schreibt eure Ideen!',
       `Meme City hat schon ${fmt(s.houses)} Häuser! Fehlt deins noch?`,
       'Schaut mal, wie die Autos durch die Straßen fahren. Hier ist richtig was los!',
+      'Falls ich eure Nachricht übersehen habe, schreibt sie einfach nochmal!',
+      'Ich lese euren Chat mit. Wenn ich etwas verpasst habe, schreibt es gern nochmal!',
     ];
     if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Respekt!`);
     if (s.community) {
@@ -384,7 +428,7 @@ export class Game {
       ];
       if (next) commLines.push(`Nach dem ${c.name} kommt als nächstes ein ${next}. Ich bin schon gespannt!`);
       // doppelt so oft wie andere Saetze
-      lines.push(...commLines, ...commLines);
+      lines.push(...commLines, ...commLines, ...commLines);
       this.broadcast({ type: 'ticker', text: `🏗️ Gemeinschaftsbau ${c.name}: ${fmt(c.progress)} / ${fmt(c.goal)} (${pct} %)`, highlight: true });
     }
     this.speech.say(pick(lines));
