@@ -378,8 +378,9 @@ export class Action {
     p.pet = pet[0];
     this.game.store.save();
     this.speech.say(pick([`${spoken(p)} hat ein neues Haustier: ${pet[1]}! Wie süß!`, `Ein neuer Mitbewohner: ${pet[1]} für ${spoken(p)}!`]));
-    this.builder.enqueue({ type: 'camera', player: p });
     this.builder.enqueue({ type: 'fn', fn: async () => {
+      // Nahaufnahme: Kamera tief vor dem Vorgarten, Tier vorne, Haus dahinter
+      await this.builder.petCamera(x, z, fr);
       await this.mc.send(`kill @e[tag=mc_pet_${p.plot}]`);
       // NoAI: das Tier bleibt im Vorgarten stehen und laeuft nicht weg
       const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
@@ -387,6 +388,7 @@ export class Action {
       this.log(`[Haustier] ${p.name}: ${pet[0]} -> ${r}`);
       await this.mc.send(`particle minecraft:heart ${x} ${BASE + 1.5} ${z} 0.6 0.4 0.6 0 12 force`);
       await this.mc.send(`particle minecraft:poof ${x} ${BASE + 0.5} ${z} 0.4 0.3 0.4 0.05 20 force`);
+      await sleep(4500); // kurz drauf bleiben
     } });
   }
 

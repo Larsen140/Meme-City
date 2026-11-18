@@ -190,6 +190,13 @@ export class Builder {
     await this.camera(0, BASE + 55, 70, 0, BASE, 0);
   }
 
+  /** Nahaufnahme eines Tieres im Vorgarten (x, z = Platz des Tieres, fr = Vorderseite des Grundstuecks). */
+  async petCamera(x, z, fr, seconds) {
+    const d = 6.5, side = 0.8;
+    const camX = x + 0.5 + fr.dx * d + (fr.dz ? side : 0), camZ = z + 0.5 + fr.dz * d + (fr.dx ? side : 0);
+    await this.camera(camX, BASE + 4.6, camZ, x + 0.5, BASE - 0.8, z + 0.5, seconds); // Tier etwas ueber Bildmitte, hoch genug, dass die Hecke das Tier nicht verdeckt
+  }
+
   // ---------- Stadt-Grundlagen ----------
 
   async setupWorld() {

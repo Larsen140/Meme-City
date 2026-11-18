@@ -94,7 +94,8 @@ export class GiftFx {
     if (this.builder.queue.some((j) => j.giftFor === p.id)) return;
     // Bei sehr vielen Auftraegen gleichzeitig kleine Geschenke ohne Flug zeigen
     if (coins < 5 && this.builder.queue.length > 4) return this.effect(kind, p);
-    this.builder.enqueue({ type: 'camera', player: p, giftFor: p.id });
+    // Tiere bekommen eine eigene Nahaufnahme, alle anderen den Blick aufs Haus
+    if (!['dog', 'panda', 'cat'].includes(kind)) this.builder.enqueue({ type: 'camera', player: p, giftFor: p.id });
     this.builder.enqueue({ type: 'fn', giftFor: p.id, fn: () => this.effect(kind, p, true) });
   }
 
@@ -143,10 +144,16 @@ export class GiftFx {
       setTimeout(() => mc.send('time set noon'), 9000);
     } else if (kind === 'dog' || kind === 'panda' || kind === 'cat') {
       const [mob, label] = { dog: ['wolf', 'Hund'], panda: ['panda', 'Panda'], cat: ['cat', 'Katze'] }[kind];
-      await mc.send(`summon ${mob} ${x + 3} ${BASE} ${z + 3} {Tags:["mc_pet","mc_gift_pet_${p.plot}"],PersistenceRequired:1b,CustomName:${JSON.stringify(p.name + 's ' + label)},CustomNameVisible:1b}`);
-      await mc.send(`particle minecraft:heart ${x + 3} ${BASE + 1.5} ${z + 3} 1 0.6 1 0 20 force`);
-      await mc.send(`particle minecraft:poof ${x + 3} ${BASE + 0.5} ${z + 3} 0.5 0.3 0.5 0.05 30 force`);
-      await mc.send(`playsound minecraft:entity.${mob}.ambient master @a ${x} ${BASE} ${z} 2 1`);
+      // im Vorgarten auf der anderen Wegseite als das Chat-Haustier, bleibt stehen
+      const px = x + fr.dx * 5 - (fr.dz ? 3 : 0), pz = z + fr.dz * 5 - (fr.dx ? 3 : 0);
+      const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
+      if (big) await this.builder.petCamera(px, pz, fr);
+      await mc.send(`kill @e[tag=mc_gift_pet_${p.plot}]`);
+      await mc.send(`summon ${mob} ${px} ${BASE} ${pz} {Tags:["mc_pet","mc_gift_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${JSON.stringify(p.name + 's ' + label)},CustomNameVisible:1b}`);
+      await mc.send(`particle minecraft:heart ${px} ${BASE + 1.5} ${pz} 1 0.6 1 0 20 force`);
+      await mc.send(`particle minecraft:poof ${px} ${BASE + 0.5} ${pz} 0.5 0.3 0.5 0.05 30 force`);
+      await mc.send(`playsound minecraft:entity.${mob}.ambient master @a ${px} ${BASE} ${pz} 2 1`);
+      if (big) await sleep(4000);
     } else if (kind === 'money' || kind === 'diamond') {
       const item = kind === 'money' ? 'gold_ingot' : 'diamond';
       for (let i = 0; i < 12; i++) {
