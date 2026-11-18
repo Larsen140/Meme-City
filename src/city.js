@@ -255,6 +255,9 @@ export function clearPlotCommands(cx, cz) {
   return [
     `fill ${a} ${BASE} ${e} ${b} ${BASE + CLEAR_HEIGHT} ${f} air`,
     `fill ${a} ${GROUND} ${e} ${b} ${GROUND} ${f} grass_block`,
+    // Baumkronen, die ueber das Grundstueck hinaus auf die Strasse ragen, auch entfernen
+    `fill ${cx - 12} ${BASE} ${cz - 12} ${cx + 12} ${BASE + 30} ${cz + 12} air replace #minecraft:leaves`,
+    `fill ${cx - 12} ${BASE} ${cz - 12} ${cx + 12} ${BASE + 30} ${cz + 12} air replace #minecraft:logs`,
   ];
 }
 

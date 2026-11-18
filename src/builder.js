@@ -77,7 +77,7 @@ export class Builder {
     if (!this.cam) {
       this.cam = { x: 0, y: BASE + 55, z: 70, yaw: 180, pitch: 38 };
       await this.mc.send('kill @e[tag=mc_cam]');
-      await this.mc.send(`summon item_display ${this.cam.x} ${this.cam.y} ${this.cam.z} {Tags:["mc_cam"],teleport_duration:${CAM_STEP_TICKS + 1},Rotation:[180f,38f]}`);
+      await this.mc.send(`summon item_display ${this.cam.x} ${this.cam.y} ${this.cam.z} {Tags:["mc_cam"],teleport_duration:${CAM_STEP_TICKS + 2},Rotation:[180f,38f]}`);
     }
     await this.mc.send(`gamemode spectator ${p}`);
     await this.mc.send(`spectate @e[tag=mc_cam,limit=1] ${p}`);
@@ -92,21 +92,25 @@ export class Builder {
     const to = { x, y, z, yaw: (Math.atan2(-dx, dz) * 180) / Math.PI, pitch: (-Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI };
     let dYaw = ((to.yaw - from.yaw + 540) % 360) - 180; // kuerzester Drehweg
     const dist = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
-    const dur = seconds ?? Math.min(4.5, Math.max(1.2, dist / 28 + Math.abs(dYaw) / 160));
+    const dur = seconds ?? Math.min(5, Math.max(2, dist / 22 + Math.abs(dYaw) / 120));
     const steps = Math.max(1, Math.round((dur * 20) / CAM_STEP_TICKS));
     const arc = Math.min(25, dist * 0.18); // bei weiten Fluegen leicht nach oben ausholen
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
-    for (let i = 1; i <= steps; i++) {
-      const t = ease(i / steps);
+    // Zeitgesteuert (nicht schrittgezaehlt): kleine Verzoegerungen beim Senden bremsen den Flug nicht aus
+    const start = Date.now(), total = steps * CAM_STEP_TICKS * 50;
+    for (let done = false; !done;) {
+      const raw = Math.min(1, (Date.now() - start + CAM_STEP_TICKS * 50) / total);
+      done = raw >= 1;
+      const t = ease(raw);
       const c = {
         x: from.x + (to.x - from.x) * t,
-        y: from.y + (to.y - from.y) * t + Math.sin(Math.PI * (i / steps)) * arc,
+        y: from.y + (to.y - from.y) * t + Math.sin(Math.PI * raw) * arc,
         z: from.z + (to.z - from.z) * t,
         yaw: from.yaw + dYaw * t,
         pitch: from.pitch + (to.pitch - from.pitch) * t,
       };
       await this.mc.send(`tp @e[tag=mc_cam,limit=1] ${c.x.toFixed(2)} ${c.y.toFixed(2)} ${c.z.toFixed(2)} ${c.yaw.toFixed(1)} ${c.pitch.toFixed(1)}`);
-      await sleep(CAM_STEP_TICKS * 50);
+      if (!done) await sleep(CAM_STEP_TICKS * 50 - ((Date.now() - start) % (CAM_STEP_TICKS * 50)));
     }
     this.cam = { ...to, yaw: from.yaw + dYaw };
   }
