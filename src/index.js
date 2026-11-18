@@ -11,6 +11,8 @@ import { Speech } from './speech.js';
 import { Store } from './store.js';
 import { Game } from './game.js';
 import { TikTok } from './tiktok.js';
+import { CityLife } from './life.js';
+import { plotCenter, roadCommands, lampCommands } from './city.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'config.json'), 'utf8'));
@@ -104,7 +106,20 @@ server.listen(config.webPort || 3000, async () => {
   }
   await builder.setupWorld();
   await builder.cameraOverview();
+  // Gehwege und Laternen auch an schon bebauten Grundstuecken nachruesten
+  if ((store.data.decoVersion || 0) < 2) {
+    builder.enqueue({ type: 'fn', fn: async () => {
+      for (let n = 0; n < store.data.nextPlot; n++) {
+        const { x, z } = plotCenter(n);
+        await mc.send(`forceload add ${x - 12} ${z - 12} ${x + 12} ${z + 12}`);
+        await mc.sendAll([...roadCommands(x, z), ...lampCommands(x, z)]);
+        await mc.send(`forceload remove ${x - 12} ${z - 12} ${x + 12} ${z + 12}`);
+      }
+    } });
+  }
   game.ensureFreePlots();
+  const life = new CityLife(mc, { people: config.people ?? 40 }, log);
+  life.start(store);
   broadcast({ type: 'mc', connected: true });
   if (config.autoConnectTikTok !== false) tiktok.connect();
 });

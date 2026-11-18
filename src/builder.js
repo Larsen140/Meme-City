@@ -2,7 +2,7 @@
 // Alles laeuft nacheinander in einer Warteschlange, damit sich nichts ueberschneidet.
 import {
   BASE, HALF, plotCenter, housePlan, gardenCommands, roadCommands, scaffoldCommands,
-  removeScaffoldCommands, clearPlotCommands, communityPlan, plazaCommands, COMMUNITY_CELLS,
+  removeScaffoldCommands, clearPlotCommands, lampCommands, freePlotDecoration, communityPlan, plazaCommands, COMMUNITY_CELLS,
 } from './city.js';
 import { levelInfo } from './levels.js';
 import { snbtString, sleep } from './minecraft.js';
@@ -90,16 +90,16 @@ export class Builder {
       const a = cx - HALF - 5, b = cx + HALF + 5, e = cz - HALF - 5, f = cz + HALF + 5;
       await mc.send(`forceload add ${a} ${e} ${b} ${f}`);
       await mc.sendAll(roadCommands(cx, cz));
+      await mc.sendAll(clearPlotCommands(cx, cz));
+      await mc.sendAll(lampCommands(cx, cz));
+      await mc.sendAll(freePlotDecoration(cx, cz, n));
       await mc.sendAll([
-        `fill ${cx - HALF} ${BASE - 1} ${cz - HALF} ${cx + HALF} ${BASE - 1} ${cz - HALF} smooth_stone`,
-        `fill ${cx - HALF} ${BASE - 1} ${cz + HALF} ${cx + HALF} ${BASE - 1} ${cz + HALF} smooth_stone`,
-        `fill ${cx - HALF} ${BASE - 1} ${cz - HALF} ${cx - HALF} ${BASE - 1} ${cz + HALF} smooth_stone`,
-        `fill ${cx + HALF} ${BASE - 1} ${cz - HALF} ${cx + HALF} ${BASE - 1} ${cz + HALF} smooth_stone`,
         `kill @e[tag=mc_plot_${n}]`,
-        `summon text_display ${cx} ${BASE + 2} ${cz} {Tags:["mc_plot_${n}","mc_plot"],billboard:"center",background:1426063360,` +
+        `summon text_display ${cx} ${BASE + 3} ${cz} {Tags:["mc_plot_${n}","mc_plot"],billboard:"center",background:1426063360,` +
           `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[2.5f,2.5f,2.5f]},` +
           `text:{text:"FREI\\n",color:"green",bold:true,extra:[{text:"Grundstück ${n + 1}",color:"white",bold:false}]}}`,
       ]);
+      await mc.send('kill @e[type=item]');
       await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
     }
   }

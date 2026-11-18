@@ -109,6 +109,7 @@ export class Game {
   ensureFreePlots() {
     const d = this.store.data;
     const want = this.cfg.freePlots ?? 120;
+    if ((d.decoVersion || 0) < 2) { d.preparedUntil = d.nextPlot; d.decoVersion = 2; }
     const from = Math.max(d.preparedUntil || 0, d.nextPlot);
     if (from - d.nextPlot >= want / 2) return;
     const to = d.nextPlot + want;

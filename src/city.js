@@ -170,6 +170,8 @@ export function gardenCommands(cx, cz, house) {
   // Weg von der Tuer zur Strasse
   c.push(`fill ${cx} ${GROUND} ${house.z2 + 1} ${cx} ${GROUND} ${f} dirt_path`);
   c.push(`fill ${cx - 1} ${BASE} ${f} ${cx + 1} ${BASE} ${f} air`);
+  // Strassenlaternen an den Ecken
+  c.push(...lampCommands(cx, cz));
   // Laternen am Eingang
   for (const x of [cx - 2, cx + 2]) {
     c.push(`setblock ${x} ${BASE} ${f} oak_fence`);
@@ -202,6 +204,11 @@ export function roadCommands(cx, cz) {
     `fill ${cx - HALF} ${GROUND} ${cz + 10} ${cx + HALF} ${GROUND} ${cz + 10} white_concrete`,
     `fill ${cx - 10} ${GROUND} ${cz - HALF} ${cx - 10} ${GROUND} ${cz + HALF} white_concrete`,
     `fill ${cx + 10} ${GROUND} ${cz - HALF} ${cx + 10} ${GROUND} ${cz + HALF} white_concrete`,
+    // Gehwege an beiden Strassenraendern
+    ...[-12, -8, 8, 12].flatMap((o) => [
+      `fill ${cx - HALF} ${GROUND} ${cz + o} ${cx + HALF} ${GROUND} ${cz + o} smooth_stone replace gray_concrete`,
+      `fill ${cx + o} ${GROUND} ${cz - HALF} ${cx + o} ${GROUND} ${cz + HALF} smooth_stone replace gray_concrete`,
+    ]),
   ];
 }
 
@@ -314,5 +321,39 @@ export function plazaCommands() {
       `fill ${x} ${BASE} ${z} ${x} ${BASE + 2} ${z} dark_oak_fence`,
       `setblock ${x} ${BASE + 3} ${z} lantern`,
     ]),
+    // Baeume und Baenke auf dem Platz
+    ...[[-10, -10], [10, -10], [-10, 10], [10, 10]].map(([x, z]) => `execute if block ${x} ${BASE} ${z} air run place feature minecraft:fancy_oak ${x} ${BASE} ${z}`),
+    ...[[-4, -9], [4, -9], [-4, 9], [4, 9]].flatMap(([x, z]) => [
+      `setblock ${x} ${BASE} ${z} spruce_stairs[facing=${z < 0 ? 'south' : 'north'}]`,
+      `setblock ${x + 1} ${BASE} ${z} spruce_stairs[facing=${z < 0 ? 'south' : 'north'}]`,
+    ]),
   ];
+}
+
+/** Strassenlaternen an den vier Ecken eines Grundstuecks. */
+export function lampCommands(cx, cz) {
+  return [[-HALF, -HALF], [HALF, -HALF], [-HALF, HALF], [HALF, HALF]].flatMap(([dx, dz]) => [
+    `fill ${cx + dx} ${BASE} ${cz + dz} ${cx + dx} ${BASE + 2} ${cz + dz} dark_oak_fence`,
+    `setblock ${cx + dx} ${BASE + 3} ${cz + dz} lantern`,
+  ]);
+}
+
+/** Freies Grundstueck huebsch machen: Baeume, Blumen, Buesche. */
+export function freePlotDecoration(cx, cz, n) {
+  let seed = n * 7919 + 13;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const trees = ['minecraft:oak', 'minecraft:birch', 'minecraft:fancy_oak', 'minecraft:oak', 'minecraft:birch'];
+  const c = [];
+  const count = 1 + Math.floor(rnd() * 2);
+  for (let i = 0; i < count; i++) {
+    const x = cx - 3 + Math.floor(rnd() * 7), z = cz - 3 + Math.floor(rnd() * 7);
+    if (Math.abs(x - cx) < 3 && Math.abs(z - cz) < 3) continue;
+    c.push(`place feature ${trees[Math.floor(rnd() * trees.length)]} ${x} ${BASE} ${z}`);
+  }
+  const flowers = ['poppy', 'dandelion', 'cornflower', 'azure_bluet', 'oxeye_daisy', 'allium', 'short_grass', 'short_grass', 'short_grass'];
+  for (let i = 0; i < 14; i++) {
+    const x = cx - 6 + Math.floor(rnd() * 13), z = cz - 6 + Math.floor(rnd() * 13);
+    c.push(`setblock ${x} ${BASE} ${z} ${flowers[Math.floor(rnd() * flowers.length)]} keep`);
+  }
+  return c;
 }
