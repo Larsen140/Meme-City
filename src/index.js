@@ -70,6 +70,7 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'state', state: game.state() }));
   ws.send(JSON.stringify({ type: 'tiktok', status: tiktok.status }));
   ws.send(JSON.stringify({ type: 'mc', connected: mc.connected }));
+  if (pauseState.on) ws.send(JSON.stringify({ type: 'pause', ...pauseState }));
 });
 
 // ---------- API fuers Testpanel ----------
@@ -89,6 +90,8 @@ app.post('/api/sim/gift', (req, res) => {
   game.onGift(testUser(req.body), { ...g, count: Number(req.body.count) || 1 });
   res.json({ ok: true });
 });
+let pauseState = { on: false, text: '' };
+app.post('/api/pause', (req, res) => { pauseState = { on: !!req.body.on, text: String(req.body.text || 'Kurze Umbaupause') }; broadcast({ type: 'pause', ...pauseState }); res.json({ ok: true }); });
 app.post('/api/say', (req, res) => { speech.say(String(req.body.text || ''), true); res.json({ ok: true }); });
 app.post('/api/tiktok/connect', async (req, res) => { tiktok.connect(); res.json({ ok: true }); });
 app.post('/api/tiktok/disconnect', async (req, res) => { await tiktok.disconnect(); res.json({ ok: true }); });

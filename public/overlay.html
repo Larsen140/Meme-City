@@ -59,6 +59,17 @@
   #gifts .tip { font-size: 19px; color: var(--muted); margin-top: 4px; }
   #comm .nums { display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; }
 
+  /* ---------- Pause ---------- */
+  #pause { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity .8s;
+    background: radial-gradient(circle at 50% 40%, #ff8a3d 0%, #ff3d7f 35%, #2a1660 80%); }
+  #pause.show { opacity: 1; }
+  #pause .box { text-align: center; margin-top: -200px; }
+  #pause .logo { font-size: 150px; font-weight: 800; line-height: 1; color: #ffd84d; -webkit-text-stroke: 10px #1b1240; paint-order: stroke fill; }
+  #pause .txt { font-size: 64px; font-weight: 800; margin-top: 30px; }
+  #pause .sub { font-size: 44px; color: #ffe9f1; }
+  #pause .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
+  @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
+
   /* ---------- Banner ---------- */
   #banner { position: absolute; top: 640px; left: 50%; transform: translate(-50%, -40px) scale(.8); opacity: 0; transition: all .45s cubic-bezier(.2,1.4,.4,1); padding: 22px 40px; display: flex; align-items: center; gap: 22px; min-width: 640px; border-color: var(--gold); }
   #banner.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
@@ -124,6 +135,7 @@
 </style>
 </head>
 <body>
+<div id="pause"><div class="box"><div class="logo">MEME CITY</div><div class="txt" id="pauseText">Kurze Umbaupause</div><div class="sub">Gleich geht's weiter<span class="dots"></span></div></div></div>
 <canvas id="confetti" width="1080" height="1920"></canvas>
 <div id="status"></div>
 
@@ -398,6 +410,7 @@ function connect() {
     if (m.type === 'state') { renderState(m.state); renderGifts(m.state); }
     else if (m.type === 'player') { $('likestats').classList.remove('show'); showPlayer(m.card); }
     else if (m.type === 'likestats') showLikeStats(m);
+    else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);
     else if (m.type === 'ticker') ticker(m.text, m.highlight);
