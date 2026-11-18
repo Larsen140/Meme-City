@@ -39,7 +39,12 @@ const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 const broadcast = (msg) => {
   const s = JSON.stringify(msg);
-  for (const c of wss.clients) if (c.readyState === 1) c.send(s);
+  for (const c of wss.clients) {
+    // langsamen Empfaengern (Overlay haengt gerade) unwichtige Meldungen nicht weiter aufstauen
+    if (c.readyState !== 1) continue;
+    if (c.bufferedAmount > 64 * 1024 && (msg.type === 'likes' || msg.type === 'goal' || msg.type === 'duel' || msg.type === 'raffle')) continue;
+    c.send(s);
+  }
 };
 
 // ---------- Teile zusammenbauen ----------

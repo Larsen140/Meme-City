@@ -208,6 +208,13 @@
   /* Ehrenbuergermeister und Gemeinschaftsbau breiter (bis neben die Top 5) */
   #right { width: auto; left: 430px; right: 36px; }
   #honor .nm { font-size: 36px; } #comm .cname { font-size: 38px; }
+
+  .like { background: none !important; font-size: 54px; will-change: transform, opacity; }
+  .like::after { content: none; }
+  .panel { contain: layout paint; }
+  #bubble { contain: none; } /* sonst wird der Sprechblasen-Zipfel abgeschnitten */
+  #player, #likestats, #help, #banner, #goal, #almost, #mayor, #bubble { will-change: transform, opacity; }
+  .bar i { transition: width .4s linear; }
 </style>
 </head>
 <body>
@@ -529,13 +536,13 @@ function drawMayor(t) {
 // ---------- Likes ----------
 let likeCount = 0;
 function likeBubble(l) {
-  if (document.querySelectorAll('.like').length >= 6 || ++likeCount % 3) return; // wenige Blasen = fluessig
+  // nur ein schlichtes Herz (keine Profilbilder laden) und hoechstens 5 gleichzeitig
+  if (document.querySelectorAll('.like').length >= 5) return;
   const d = document.createElement('div');
   d.className = 'like';
   d.style.setProperty('--dx', `${Math.round((Math.random() - 0.7) * 160)}px`);
   d.style.right = `${40 + Math.random() * 60}px`;
-  d.innerHTML = l.avatar ? `<img src="${esc(l.avatar)}" referrerpolicy="no-referrer">` : '';
-  if (!l.avatar) d.style.background = 'var(--pink)';
+  d.textContent = l.count >= 50 ? '💖' : '❤️';
   document.body.appendChild(d);
   setTimeout(() => d.remove(), 2700);
 }

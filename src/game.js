@@ -348,7 +348,9 @@ export class Game {
     p.likeRest += count;
     const up = Math.floor(p.likeRest / this.likesPerPoint);
     p.likeRest -= up * this.likesPerPoint;
-    this.broadcast({ type: 'likes', count, avatar: p.avatar, name: p.name });
+    // Like-Herzen gebuendelt: hoechstens alle 400 ms eine Meldung ans Overlay (sonst staut es sich bei vielen Likes)
+    this._likeBatch = (this._likeBatch || 0) + count;
+    if (!this._likeTimer) this._likeTimer = setTimeout(() => { this.broadcast({ type: 'likes', count: this._likeBatch }); this._likeBatch = 0; this._likeTimer = null; }, 400);
     if (up > 0) this.addPoints(p, up);
     this.action?.onLike(p, count);
     // Herzen steigen ueber dem eigenen Haus auf (hoechstens alle 4 Sekunden pro Person)
