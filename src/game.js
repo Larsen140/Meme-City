@@ -1,6 +1,7 @@
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
 import { COMMUNITY_PROJECTS, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
+import { isQuestion, answer } from './faq.js';
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
@@ -243,6 +244,8 @@ export class Game {
         this.builder.enqueue({ type: 'camera', player: p });
         this.speech.say(pick([`Kamera ab! Hier wohnt ${spoken(p)}.`, `Bitte schön, das Haus von ${spoken(p)}.`, `Wir fliegen zu ${spoken(p)}!`]));
       }
+    } else if (isQuestion(t) && !/^(haus|house)\b/.test(t)) {
+      this.replyToChat(p, text); // Frage wie "Wie bekomme ich ein Haus?" beantworten statt sofort zu bauen
     } else if (/\b(haus|house)\b/.test(t)) {
       if (!this.claimHouse(p, 'chat')) {
         this.broadcast({ type: 'player', card: this.card(p) });
@@ -271,6 +274,11 @@ export class Game {
     if (!t || /https?:|www\.|\.com|\.de\b/.test(t)) return; // keine Links vorlesen
     const BAD = /(fick|fuck|hure|nutte|nazi|hitler|schlampe|wichser|hurensohn|missgeburt|arsch|scheiß|scheiss|bitch|nigg|schwuchtel|spast|behindert|töte|kill dich|sex|porn|nackt)/;
     if (BAD.test(t)) return;
+    // Fragen zur Stadt und zu den Funktionen beantworten (Vorrang vor allem anderen)
+    if (isQuestion(t)) {
+      const a = answer(this, p, t, n);
+      if (a) { if (this.chatReplyReady(p, 15_000)) { this.log(`[Frage] @${p.name}: ${text}`); this.speech.say(a, true); } return; }
+    }
     let line = null;
     if (/\b(hi|hallo|hey|moin|servus|hello|huhu|na|guten (tag|abend|morgen)|grüß|gruss|yo)\b/.test(t)) {
       line = p.plot === null

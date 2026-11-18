@@ -123,11 +123,13 @@ export class Action {
     const words = t.replace(/[^a-zäöüß ]/g, ' ').split(/\s+/).filter(Boolean);
     if (/haustier|\bpet\b/.test(t)) {
       const w = words.find((x) => findPet(x));
+      if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> beantwortet der Buergermeister
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdPet(p, w || ''), true;
     }
     if (/farbe|color/.test(t)) {
       const w = words.find((x) => COLORS[x]);
+      if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> beantwortet der Buergermeister
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdColor(p, w || ''), true;
     }
