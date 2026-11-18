@@ -227,7 +227,7 @@ function renderState(s) {
   $('rows').innerHTML = s.top.length ? s.top.slice(0, 5).map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
     : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>';
   $('honor').innerHTML = s.honorary
-    ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">Größter Unterstützer der Stadt</div></div>`
+    ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">Platz 1 der Stadt</div></div>`
     : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Wer wird es?</div></div>`;
   $('comm').innerHTML = s.community
     ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU: ${esc(s.community.name.toUpperCase())}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
@@ -246,9 +246,7 @@ function renderGifts(s) {
     ['🗿', 'ab 1.000', 'Denkmal am Platz'],
     ['👑', 'Platz 1', 'Goldene Krone'],
   ];
-  $('gifts').innerHTML = `<div class="ptitle">🎁 SO WIRKEN GESCHENKE IN MEME CITY</div>` +
-    '<div class="rows2">' + rows.map(([ic, n, e]) => `<div class="g"><div class="ic">${ic}</div><b>${n}</b><span>${e}</span></div>`).join('') + '</div>' +
-    `<div class="tip">Jedes Geschenk zählt als Punkte fürs eigene Haus (1 Coin = 1 Punkt) · Likes zählen auch (${s.likesPerPoint || 50} = 1 Punkt)</div>`;
+  $('gifts').innerHTML = ''; // abgeschaltet
 }
 
 // ---------- Spieler-Karte ----------

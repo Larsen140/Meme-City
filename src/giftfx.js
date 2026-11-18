@@ -79,9 +79,6 @@ export class GiftFx {
   /** Wird bei jedem Geschenk aufgerufen. */
   run(p, gift, coins) {
     this.sessionCoins.set(p.id, (this.sessionCoins.get(p.id) || 0) + coins);
-    if ((gift.count || 1) >= 5) {
-      this.broadcast({ type: 'banner', title: `🔥 COMBO x${gift.count}!`, text: `@${p.name} · ${gift.name}`, avatar: p.avatar, big: true });
-    }
     this.checkCrown();
     if (coins >= 1000) this.statue(p);
 
@@ -340,7 +337,7 @@ export class GiftFx {
     data.crownFor = ts.id;
     this.game.store.save();
     if (!first) {
-      this.speech.say(`Machtwechsel! ${ts.nick || ts.name} ist der neue Ehrenbürgermeister und bekommt die goldene Krone!`, true);
+      this.speech.say(`${ts.nick || ts.name} ist jetzt auf Platz eins und neuer Ehrenbürgermeister!`, true);
       this.broadcast({ type: 'banner', title: '👑 NEUER EHRENBÜRGERMEISTER', text: `@${ts.name}`, avatar: ts.avatar, big: true });
     }
     this.builder.enqueue({ type: 'fn', fn: () => this.placeCrown(ts) });
