@@ -146,6 +146,7 @@ export class GiftFx {
       const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
       if (big) await this.builder.petCamera(px, pz, fr);
       await mc.send(`kill @e[tag=mc_gift_pet_${p.plot}]`);
+      p.giftPet = mob; this.game.store.save(); this.game.pushState?.();
       await mc.send(`summon ${mob} ${px} ${BASE} ${pz} {Tags:["mc_pet","mc_gift_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${JSON.stringify(p.name + 's ' + label)},CustomNameVisible:1b}`);
       await mc.send(`particle minecraft:heart ${px} ${BASE + 1.5} ${pz} 1 0.6 1 0 20 force`);
       await mc.send(`particle minecraft:poof ${px} ${BASE + 0.5} ${pz} 0.5 0.3 0.5 0.05 30 force`);

@@ -377,6 +377,7 @@ export class Action {
     const name = JSON.stringify(`${p.name}s ${pet[1]}`);
     p.pet = pet[0];
     this.game.store.save();
+    this.game.pushState?.();
     this.speech.say(pick([`${spoken(p)} hat ein neues Haustier: ${pet[1]}! Wie süß!`, `Ein neuer Mitbewohner: ${pet[1]} für ${spoken(p)}!`]));
     this.builder.enqueue({ type: 'fn', fn: async () => {
       // Nahaufnahme: Kamera tief vor dem Vorgarten, Tier vorne, Haus dahinter

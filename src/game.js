@@ -119,6 +119,7 @@ export class Game {
       mayorName: this.mayorName,
       houses: this.housesCount,
       citizens: Object.keys(this.store.players).length,
+      pets: Object.values(this.store.players).reduce((n, p) => n + (p.pet ? 1 : 0) + (p.giftPet ? 1 : 0), 0),
       top,
       honorary: ts ? { name: ts.name, nick: ts.nick, avatar: ts.avatar, coins: ts.coins } : null,
       community: proj ? { name: proj.name, progress: Math.floor(c.progress), goal: proj.goal } : null,

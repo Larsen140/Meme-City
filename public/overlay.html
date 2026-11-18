@@ -220,6 +220,7 @@
   <div class="chips">
     <div class="chip"><b id="houses">0</b><span>Häuser</span></div>
     <div class="chip"><b id="citizens">0</b><span>Bürger</span></div>
+    <div class="chip"><b id="pets">0</b><span>Haustiere</span></div>
   </div>
 </div>
 
@@ -267,6 +268,7 @@ function renderState(s) {
   $('mayorName').textContent = s.mayorName;
   $('houses').textContent = fmt(s.houses);
   $('citizens').textContent = fmt(s.citizens);
+  $('pets').textContent = fmt(s.pets || 0);
   $('rows').innerHTML = s.top.length ? s.top.slice(0, 5).map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
     : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>';
   $('honor').innerHTML = s.honorary
