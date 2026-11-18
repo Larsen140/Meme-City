@@ -36,11 +36,11 @@ export function answer(game, p, t, name) {
       : `${name}, du hast noch kein Haus. Schreib Haus, dann baue ich dir eins!`],
     // ---- Befehle ----
     [/farbe|dach|anmal|streich/, () => `Schreib zum Beispiel farbe rot, farbe blau oder farbe lila. Dann streiche ich dein Dach neu!`],
-    [/haustier|tier|hund|katze|pet/, () => `Schreib haustier und ein Tier, zum Beispiel haustier katze, hund, fuchs, panda oder axolotl. Das Tier zieht in deinen Vorgarten!`],
+    [/haustier|tier|hund|katze|pinguin|pet/, () => `Schreib haustier und ein Tier, zum Beispiel haustier katze, hund, pinguin, fuchs oder panda. Das Tier zieht in deinen Vorgarten!`],
     [/party|feier/, () => `Schreib party, dann gibt es Feuerwerk bei deinem Haus!`],
     [/nord|süd|sued|team|duell|kampf/, () => `Alle paar Minuten kämpfen Nord gegen Süd. Schreib nord oder süd und like für dein Team. Die Gewinner bekommen Bonuspunkte!`],
-    [/verlosung|gewinn|lotterie|losen/, () => `Bei der Verlosung schreibst du ich in den Chat. Der Gewinner bekommt ein Gratis-Upgrade fürs Haus!`],
-    [/befehl|was kann (man|ich)|was (geht|gibt es)|commands?/, () => `Du kannst schreiben: Haus, zeig mein Haus, farbe rot, haustier katze, party, nord oder süd. Probier's aus!`],
+    [/abstimm|wählen|waehlen|voting|verlosung|was passiert (als nächstes|gleich)/, () => `Alle paar Minuten stimmt ihr ab, was passiert. Schreib dann eins, zwei oder drei. Jede Stimme gibt auch einen Punkt fürs Haus!`],
+    [/befehl|was kann (man|ich)|was (geht|gibt es)|commands?/, () => `Du kannst schreiben: Haus, zeig mein Haus, farbe rot, haustier pinguin, party, nord oder süd. Probier's aus!`],
     // ---- Haus bekommen und aufsteigen ----
     [/(wie|wo).*(bekomm|krieg|kriege|hol|mach).*(\bhaus\b|grundstück|grundstueck)|haus (bekommen|kriegen|haben)|mitmachen|mitspielen|wie spielt man|wie geht (das|es)|wie funktioniert/, () =>
       `Ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Grundstück. Mit Likes wird dein Haus Stufe für Stufe größer!`],

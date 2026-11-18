@@ -2,6 +2,7 @@
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
 import { COMMUNITY_PROJECTS, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
+import { fixCommand } from './typo.js';
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
@@ -240,6 +241,16 @@ export class Game {
     const p = this.player(user);
     if (!p) return;
     if (this.action?.onChat(p, text)) { this.store.save(); return; }
+    // Vertippter Befehl ("hause", "frabe rot", "zieg mein haus"): verstehen, ausfuehren und kurz erklaeren
+    const fx = !this._fixing && fixCommand(text);
+    if (fx) {
+      this.log(`[Tippfehler] @${p.name}: ${text} -> ${fx.fixed}`);
+      this.broadcast({ type: 'ticker', text: `✏️ @${p.name}: „${fx.from}“ → **${fx.fixed}**` });
+      if (this.chatReplyReady(p, 30_000)) this.speech.say(pick([`${spoken(p)}, kleiner Tippfehler, ich hab's verstanden: ${fx.fixed}!`, `Alles klar ${spoken(p)}, du meinst ${fx.fixed}. Mach ich!`]));
+      this._fixing = true;
+      try { this.onChat(user, fx.fixed); } finally { this._fixing = false; }
+      return;
+    }
     const t = text.toLowerCase();
     if (/(zeig|wo ist|wo steht|show)/.test(t) && /(haus|house)/.test(t)) {
       if (p.plot === null) {
@@ -483,7 +494,7 @@ export class Game {
       'Schreib Haus in den Chat und du bekommst ein eigenes Grundstück in Meme City!',
       'Schreib: Zeig mein Haus, dann fliegen wir hin.',
       'Mit farbe rot, farbe blau oder einer anderen Farbe streichst du dein Dach neu!',
-      'Schreib haustier katze, hund oder fuchs, dann zieht ein Haustier in deinen Garten.',
+      'Schreib haustier pinguin, katze oder hund, dann zieht ein Haustier in deinen Garten.',
       'Schreib party, dann feiern wir bei dir zu Hause!',
       'Wie findet ihr die Stadt bis jetzt? Schreibt es in den Chat!',
       'Seid ihr Team Nord oder Team Süd? Schreibt es in den Chat!',
@@ -514,7 +525,7 @@ export class Game {
     this.broadcast({ type: 'ticker', text: pick([
       'Schreib „Haus“ in den Chat und zieh nach Meme City!',
       'Schreib „Zeig mein Haus“ und die Kamera fliegt hin!',
-      'Chat-Befehle: „farbe rot“ · „haustier katze“ · „party“ · „nord“ / „süd“',
+      'Chat-Befehle: „farbe rot“ · „haustier pinguin“ · „party“ · „nord“ / „süd“',
       s.top[0] ? `👑 Platz 1: @${s.top[0].name} (Stufe ${s.top[0].level})` : 'Wer wird Platz 1?',
     ]) });
   }
@@ -524,6 +535,8 @@ export class Game {
     const p = this.player(user);
     if (!p) return;
     const now = Date.now();
+    // Name kurz im Laufband: jeder sieht, dass er bemerkt wird
+    if (now - (this.lastJoinTicker || 0) > 6_000) { this.lastJoinTicker = now; this.broadcast({ type: 'ticker', text: p.plot !== null ? `👋 @${p.name} ist zurück in Meme City!` : `👋 Willkommen @${p.name}! Schreib **Haus** und zieh ein` }); }
     if (now - (this.lastGreet || 0) < 20_000 || this.speech.queue.length) return;
     this.lastGreet = now;
     const n = spoken(p);

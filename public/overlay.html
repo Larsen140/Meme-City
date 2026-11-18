@@ -327,6 +327,53 @@
   #ticker .run { position: absolute !important; left: 0 !important; right: auto !important; top: 0; height: 100%; display: flex !important; align-items: center;
     white-space: nowrap; gap: 16px; transition: none !important; animation: none !important; opacity: 1 !important; will-change: transform; }
   #ticker .run .tx { overflow: visible !important; text-overflow: clip !important; }
+
+  /* ---------- Uebersichtlich: kleinere Tafeln am Rand, Mitte frei fuers Spiel, Befehle immer sichtbar ---------- */
+  #head { top: 22px !important; left: 22px !important; right: 22px !important; padding: 8px 20px !important; gap: 14px; }
+  #logo { font-size: 50px !important; } #logo small { font-size: 16px !important; letter-spacing: 4px; }
+  .chip { min-width: 112px !important; padding: 4px 12px !important; } .chip b { font-size: 36px !important; } .chip span { font-size: 16px !important; letter-spacing: 1px; }
+
+  #cmdbar { position: absolute; top: 122px; left: 22px; right: 22px; padding: 10px 12px 10px; display: flex; flex-wrap: nowrap; align-items: center; justify-content: space-between; gap: 6px; }
+  #cmdbar .lbl { font-size: 21px; font-weight: 800; color: var(--mint); white-space: nowrap; margin-right: 2px; }
+  #cmdbar code { font-family: inherit; font-size: 23px; font-weight: 800; color: #fff; background: rgba(61,245,176,.18); border: 2px solid rgba(61,245,176,.55);
+    padding: 0 9px; border-radius: 12px; white-space: nowrap; line-height: 1.35; }
+  #cmdbar code.new { border-color: var(--gold); background: rgba(255,201,60,.22); }
+  #cmdbar::before { background: linear-gradient(90deg, #3df5b0, #4cc9ff) !important; }
+  #cmdbar.flash { animation: cmdFlash 1.2s ease 2; }
+  @keyframes cmdFlash { 50% { box-shadow: 0 0 0 4px #3df5b0, 0 0 30px rgba(61,245,176,.8) !important; } }
+
+  #goal { top: 196px !important; left: 22px !important; right: 22px !important; height: 62px !important; padding: 0 18px !important; }
+  #goal .lab, #goal .num { font-size: 26px !important; } #goal .next { font-size: 22px !important; } #goal .time { font-size: 30px !important; }
+
+  #board { top: 270px !important; left: 22px !important; width: 292px !important; padding: 10px 12px !important; }
+  #board .ptitle { font-size: 22px !important; margin-bottom: 2px; }
+  #board .row { font-size: 21px !important; padding: 2px 2px !important; gap: 7px; margin: 1px 0; }
+  #board .row img, #board .row .ava { width: 32px !important; height: 32px !important; }
+  #board .row .pos { width: 28px !important; height: 28px !important; font-size: 17px !important; }
+  #board .row .lv { font-size: 17px !important; padding: 0 6px; }
+
+  #right { top: 270px !important; left: auto !important; right: 22px !important; width: 292px !important; gap: 10px !important; }
+  #honor { padding: 10px 12px !important; gap: 10px !important; }
+  #honor img, #honor .ava { width: 46px !important; height: 46px !important; border-width: 3px !important; }
+  #honor .lbl { font-size: 16px !important; } #honor .nm { font-size: 23px !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; } #honor .sub { display: none; }
+  #comm { padding: 10px 12px !important; }
+  #comm .ptitle { font-size: 17px !important; } #comm .cname { font-size: 24px !important; margin: 0 0 2px !important; }
+  #comm .nums { font-size: 19px !important; } #comm .bar { height: 18px !important; margin-top: 4px; }
+
+  /* Buergermeister kleiner in der Ecke */
+  #mayor { bottom: 150px !important; transform: scale(.7); transform-origin: left bottom; }
+  #bubble { max-width: 900px !important; font-size: 40px !important; }
+
+  /* Einblendungen weiter unten und kompakter */
+  #player { top: 1290px !important; left: 22px !important; right: 22px !important; padding: 12px 18px !important; }
+  #player img, #player .ava { width: 92px !important; height: 92px !important; }
+  #player .nm { font-size: 38px !important; } #player .lvl { font-size: 28px !important; } #player .need { font-size: 23px !important; }
+  #likestats { top: 1250px !important; left: 22px !important; right: 22px !important; padding: 12px 18px !important; }
+  #likestats .r { font-size: 23px !important; } #likestats .r img, #likestats .r .ava { width: 32px !important; height: 32px !important; }
+  #help { display: none !important; } /* ersetzt durch die feste Befehlsleiste oben */
+  #banner { top: 760px !important; }
+  #ticker { height: 80px !important; bottom: 36px !important; } #ticker .lab { font-size: 28px !important; } #ticker .run { font-size: 34px !important; }
+  #tickbox { left: 130px !important; }
 </style>
 </head>
 <body>
@@ -342,6 +389,8 @@
     <div class="chip"><b id="pets">0</b><span>🐾 Tiere</span></div>
   </div>
 </div>
+
+<div id="cmdbar" class="panel"><span class="lbl">💬 SCHREIB:</span><code>Haus</code><code>zeig mein Haus</code><code>farbe rot</code><code class="new">haustier pinguin</code><code>party</code><code>nord / süd</code></div>
 
 <div id="goal" class="panel"></div>
 
@@ -491,6 +540,14 @@ function showRaffle(r) {
     ? `<div class="lab">🎉 GEWINNER: <b>@${esc(r.winner)}</b></div><div class="gbar"><i style="width:100%"></i></div><div class="num">${fmt(r.count)} dabei</div>`
     : `<div class="lab">🎟️ VERLOSUNG – schreib <b>„ich“</b></div><div class="gbar"><i style="width:${(100 * r.left) / 60}%"></i></div><div class="num">${fmt(r.count)} dabei</div><div class="time">${r.left}s</div>`;
 }
+function showVote(v) {
+  const el = $('goal');
+  el._h = null;
+  duelUntil = Date.now() + (v.end ? 8000 : 3000);
+  el.className = 'panel show raffle';
+  if (v.end) { el.innerHTML = `<div class="lab">🗳️ ES WIRD: <b>${esc(v.winner)}</b>!</div><div class="gbar"><i style="width:100%"></i></div><div class="num">${fmt(v.count)} Stimmen</div>`; return; }
+  el.innerHTML = `<div class="lab">🗳️ SCHREIB</div>${v.options.map((o, i) => `<div class="lab" style="font-size:24px;white-space:nowrap"><b>${i + 1}</b> ${esc(o)} <span style="color:var(--mint)">${v.counts[i]}</span></div>`).join('')}<div class="time" style="margin-left:auto">${v.left}s</div>`;
+}
 function showDuel(d) {
   const el = $('goal');
   el._h = null;
@@ -511,6 +568,9 @@ function showGifts() {
   helpTimer = setTimeout(() => $('gifts').classList.remove('show'), 10000);
 }
 function showHelp() {
+  // Befehle stehen jetzt dauerhaft oben – hier nur kurz aufleuchten lassen
+  const bar = $('cmdbar'); bar.classList.remove('flash'); void bar.offsetWidth; bar.classList.add('flash');
+  return;
   // (Geschenk-Info-Tafel abgeschaltet – TikTok wertet sie als Aufforderung)
   const cmds = [
     ['Haus', 'eigenes Grundstück'],
@@ -784,6 +844,7 @@ function connect() {
     else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);
     else if (m.type === 'raffle') showRaffle(m);
+    else if (m.type === 'vote') showVote(m);
     else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);

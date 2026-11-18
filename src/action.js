@@ -4,6 +4,7 @@
 //  3. Chat-Befehle: "farbe rot", "haustier katze", "party"
 import { BASE, plotCenter, frontOf } from './city.js';
 import { sleep } from './minecraft.js';
+import { closest } from './typo.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
@@ -20,7 +21,7 @@ const PETS = {
   schaf: ['sheep', 'Schaf'], huhn: ['chicken', 'Huhn'], pferd: ['horse', 'Pferd'], frosch: ['frog', 'Frosch'],
   axolotl: ['axolotl', 'Axolotl'], biene: ['bee', 'Biene'], lama: ['llama', 'Lama'], esel: ['donkey', 'Esel'],
   fisch: ['tropical_fish', 'Fisch'], schildkröte: ['turtle', 'Schildkröte'], schildkroete: ['turtle', 'Schildkröte'], bär: ['polar_bear', 'Eisbär'], baer: ['polar_bear', 'Eisbär'], eisbär: ['polar_bear', 'Eisbär'],
-  ziege: ['goat', 'Ziege'], kamel: ['camel', 'Kamel'], wolf: ['wolf', 'Wolf'], ente: ['chicken', 'Ente'], pinguin: ['parrot', 'Pinguin-Papagei'], kaninchen: ['rabbit', 'Kaninchen'], katz: ['cat', 'Katze'],
+  ziege: ['goat', 'Ziege'], kamel: ['camel', 'Kamel'], wolf: ['wolf', 'Wolf'], ente: ['chicken', 'Ente'], pinguin: ['penguin', 'Pinguin'], kaninchen: ['rabbit', 'Kaninchen'], katz: ['cat', 'Katze'],
 };
 
 /** Tierwort erkennen, auch Mehrzahl/Verkleinerung: "hunde", "katzen", "kätzchen", "hündchen" */
@@ -34,7 +35,35 @@ function findPet(word) {
   }
   if (/^kat/.test(w)) return PETS.katze;
   if (/^hun|^dog/.test(w)) return PETS.hund;
-  return null;
+  const k = closest(w, Object.keys(PETS)); // Tippfehler: "pingiun", "kaze"
+  return k ? PETS[k] : null;
+}
+
+// Pinguin gibt es in Minecraft nicht -> kleines Modell aus Block-Displays (schaut nach vorne = Sueden bei yaw 0)
+const PENGUIN = [
+  ['black_concrete', -0.3, 0.08, -0.25, 0.6, 0.7, 0.5],     // Koerper
+  ['white_concrete', -0.22, 0.12, 0.2, 0.44, 0.56, 0.09],   // Bauch
+  ['black_concrete', -0.37, 0.2, -0.15, 0.08, 0.48, 0.34],  // Fluegel links
+  ['black_concrete', 0.29, 0.2, -0.15, 0.08, 0.48, 0.34],   // Fluegel rechts
+  ['black_concrete', -0.23, 0.78, -0.2, 0.46, 0.4, 0.42],   // Kopf
+  ['white_concrete', -0.17, 0.83, 0.17, 0.34, 0.26, 0.08],  // Gesicht
+  ['black_concrete', -0.12, 0.96, 0.24, 0.07, 0.08, 0.03],  // Auge
+  ['black_concrete', 0.05, 0.96, 0.24, 0.07, 0.08, 0.03],   // Auge
+  ['orange_concrete', -0.06, 0.87, 0.22, 0.12, 0.07, 0.14], // Schnabel
+  ['orange_concrete', -0.24, 0, -0.02, 0.19, 0.08, 0.3],    // Fuss
+  ['orange_concrete', 0.05, 0, -0.02, 0.19, 0.08, 0.3],     // Fuss
+];
+async function summonPenguin(mc, x, z, yaw, plot, label) {
+  const tags = `Tags:["mc_pet","mc_pet_${plot}"]`;
+  const px = x + 0.5, pz = z + 0.5;
+  let r = '';
+  const S = 1.4; // etwas groesser, damit man ihn auf dem Handy gut sieht
+  for (const [b, ...v] of PENGUIN) {
+    const [tx, ty, tz, sx, sy, sz] = v.map((n) => +(n * S).toFixed(3));
+    r = await mc.send(`summon block_display ${px} ${BASE} ${pz} {${tags},Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[${tx}f,${ty}f,${tz}f],scale:[${sx}f,${sy}f,${sz}f]}}`);
+  }
+  await mc.send(`summon text_display ${px} ${BASE + 1.9} ${pz} {${tags},billboard:"center",text:${JSON.stringify(label)},background:1073741824}`);
+  return r;
 }
 
 const EVENTS = ['Tornado', 'Meteorregen', 'Tsunami', 'Feuerwerk-Show', 'Regenbogen', 'Tornado', 'Meteorregen', 'Tsunami', 'Schneesturm', 'Party'];
@@ -61,14 +90,15 @@ export class Action {
     this.duelLength = (config.duelSeconds ?? 90) * 1000;
     this.teams = new Map(); // Spieler-ID -> 'nord' | 'sued' (frei gewaehlt)
     this.nextDuelAt = Date.now() + 3 * 60_000;
-    this.nextRaffleAt = Date.now() + 5 * 60_000;
+    this.nextRaffleAt = Date.now() + 4 * 60_000; // naechste Abstimmung
+    this.vote = null;
     this.raffle = null;
     this.active = new Map(); // Spieler-ID -> letzte Aktivitaet (Chat/Like)
     // Zeitplan: Duell, Verlosung, Treue-Bonus
     setInterval(() => {
       const now = Date.now();
-      if (!this.duel && !this.raffle && now >= this.nextDuelAt) { this.nextDuelAt = now + this.duelEvery; this.startDuel(); }
-      if (!this.duel && !this.raffle && now >= this.nextRaffleAt) { this.nextRaffleAt = now + (config.raffleEveryMinutes ?? 8) * 60_000; this.startRaffle(); }
+      if (!this.duel && !this.raffle && !this.vote && now >= this.nextDuelAt) { this.nextDuelAt = now + this.duelEvery; this.startDuel(); }
+      if (!this.duel && !this.raffle && !this.vote && now >= this.nextRaffleAt) { this.nextRaffleAt = now + (config.voteEveryMinutes ?? 7) * 60_000; this.startVote(); }
     }, 1000);
     setInterval(() => this.loyaltyBonus(), (config.loyaltyMinutes ?? 5) * 60_000);
 
@@ -116,6 +146,15 @@ export class Action {
       }
       return true;
     }
+    if (this.vote) {
+      const i = /^[1-3](\s|!|\.|$)/.test(t) ? Number(t[0]) - 1 : this.vote.options.findIndex((o) => t.startsWith(o.toLowerCase().slice(0, 5)));
+      if (i >= 0 && i < 3) {
+        const first = !this.vote.votes.has(p.id);
+        this.vote.votes.set(p.id, i);
+        if (first) this.broadcast({ type: 'ticker', text: `🗳️ @${p.name} stimmt für **${this.vote.options[i]}**` });
+        return true;
+      }
+    }
     let m;
     if ((m = t.match(/^(nord|norden|süd|sued|süden|sueden)\b/))) {
       const team = m[1].startsWith('n') ? 'nord' : 'sued';
@@ -127,13 +166,13 @@ export class Action {
     // Befehle duerfen irgendwo im Satz stehen: "ich will haustier hund", "Haustier: Katze", "farbe vom dach rot"
     const words = t.replace(/[^a-zäöüß ]/g, ' ').split(/\s+/).filter(Boolean);
     if (/haustier|\bpet\b/.test(t)) {
-      const w = words.find((x) => findPet(x));
+      const w = words.find((x) => !/haustier|^pet$|^mein$|^ein$|^eine$|^will$|^ich$/.test(x) && findPet(x));
       if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> beantwortet der Buergermeister
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdPet(p, w || ''), true;
     }
     if (/farbe|color/.test(t)) {
-      const w = words.find((x) => COLORS[x]);
+      const w = words.find((x) => COLORS[x]) || words.map((x) => (x.length >= 3 && !/farbe|color|dach/.test(x) ? closest(x, Object.keys(COLORS)) : null)).find(Boolean);
       if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> beantwortet der Buergermeister
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdColor(p, w || ''), true;
@@ -147,12 +186,46 @@ export class Action {
   pushGoal() {
     this.game.store.data.likeGoal = { at: Date.now(), sessionLikes: this.sessionLikes, goalStart: this.goalStart, goalTarget: this.goalTarget, eventIndex: this.eventIndex };
     this.game.store.save();
-    if (this.duel || this.raffle) return;
+    if (this.duel || this.raffle || this.vote) return;
     const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
     const now = Date.now();
     const next = this.nextDuelAt < this.nextRaffleAt
-      ? `⚔️ Duell in ${mmss(this.nextDuelAt - now)}` : `🎟️ Verlosung in ${mmss(this.nextRaffleAt - now)}`;
+      ? `⚔️ Duell in ${mmss(this.nextDuelAt - now)}` : `🗳️ Abstimmung in ${mmss(this.nextRaffleAt - now)}`;
     this.broadcast({ type: 'goal', name: this.goalEvent, cur: this.sessionLikes - this.goalStart, target: this.goalTarget, next });
+  }
+
+  // ---------- Abstimmung: der Chat entscheidet, was als Naechstes passiert (haelt Zuschauer im LIVE) ----------
+
+  startVote() {
+    const pool = [...new Set(EVENTS)].filter((e) => e !== 'Party').sort(() => Math.random() - 0.5);
+    const options = pool.slice(0, 3);
+    this.vote = { options, votes: new Map(), end: Date.now() + 50_000 };
+    this.log('[Abstimmung] ' + options.join(' / '));
+    this.speech.say(`Abstimmung! Was soll gleich in Meme City passieren? Schreib eins für ${options[0]}, zwei für ${options[1]} oder drei für ${options[2]}!`, true);
+    this.broadcast({ type: 'banner', title: '🗳️ IHR ENTSCHEIDET!', text: options.map((o, i) => `${i + 1} = ${o}`).join('   '), big: true });
+    const tick = setInterval(() => {
+      const left = Math.max(0, Math.ceil((this.vote.end - Date.now()) / 1000));
+      const counts = [0, 0, 0]; for (const v of this.vote.votes.values()) counts[v]++;
+      this.broadcast({ type: 'vote', left, options, counts });
+      if (left === 25) this.speech.say('Noch fünfundzwanzig Sekunden! Schreib eins, zwei oder drei!');
+      if (left === 8) this.speech.say('Gleich wird entschieden!');
+      if (left <= 0) { clearInterval(tick); this.endVote(counts); }
+    }, 1000);
+  }
+
+  endVote(counts) {
+    const { options, votes } = this.vote;
+    this.vote = null;
+    const max = Math.max(...counts);
+    const best = counts.map((c, i) => (c === max ? i : -1)).filter((i) => i >= 0);
+    const win = options[best[Math.floor(Math.random() * best.length)]];
+    this.log(`[Abstimmung] ${votes.size} Stimmen -> ${win}`);
+    this.broadcast({ type: 'vote', end: true, winner: win, count: votes.size });
+    this.speech.say(votes.size ? `Entschieden! ${votes.size === 1 ? 'Eine Stimme' : votes.size + ' Stimmen'}, und es wird: ${win}!` : `Keiner hat gewählt, also entscheide ich: ${win}!`, true);
+    this.broadcast({ type: 'banner', title: `🗳️ ES WIRD: ${win.toUpperCase()}!`, text: votes.size ? `${votes.size} Stimmen aus dem Chat` : 'Der Bürgermeister hat entschieden', big: true });
+    // jede Stimme zaehlt auch fuers eigene Haus
+    for (const id of votes.keys()) { const p = this.game.store.players[id]; if (p && p.plot !== null) this.game.addPoints(p, 1); }
+    this.builder.enqueue({ type: 'fn', fn: () => this.runEvent(win) });
   }
 
   // ---------- Verlosung: wer "ich" schreibt, kann ein Gratis-Upgrade gewinnen ----------
@@ -420,8 +493,12 @@ export class Action {
   cmdColor(p, word) {
     const c = COLORS[word.replace(/[^a-zäöüß]/g, '')];
     if (p.plot === null) return this.speech.say(`${spoken(p)}, du brauchst zuerst ein Haus. Schreib Haus!`);
-    if (!c) return this.broadcast({ type: 'ticker', text: `Farben: ${Object.keys(COLORS).filter((k) => !/ue|ss/.test(k)).join(', ')}` });
-    if (!this.ready('farbe:' + p.id, 60_000)) return;
+    if (!c) {
+      this.broadcast({ type: 'ticker', text: `🎨 Farben: ${Object.keys(COLORS).filter((k) => !/ue|ss/.test(k)).join(', ')}` });
+      if (this.game.chatReplyReady(p, 20_000)) this.speech.say(`${spoken(p)}, die Farbe kenne ich nicht. Schreib zum Beispiel farbe rot, farbe hellblau oder farbe lila!`);
+      return;
+    }
+    if (!this.ready('farbe:' + p.id, 60_000)) return this.waitHint(p);
     p.color = c;
     this.game.store.save();
     this.speech.say(pick([`${spoken(p)} streicht das Dach in ${word}!`, `Neue Farbe für ${spoken(p)}: ${word}!`]));
@@ -432,8 +509,12 @@ export class Action {
   cmdPet(p, word) {
     const pet = findPet(word);
     if (p.plot === null) return this.speech.say(`${spoken(p)}, dein Haustier braucht ein Zuhause. Schreib zuerst Haus!`);
-    if (!pet) return this.broadcast({ type: 'ticker', text: `Haustiere: ${Object.keys(PETS).join(', ')}` });
-    if (!this.ready('pet:' + p.id, 60_000)) return;
+    if (!pet) {
+      this.broadcast({ type: 'ticker', text: `🐾 Haustiere: ${[...new Set(Object.values(PETS).map((v) => v[1]))].join(', ')}` });
+      if (this.game.chatReplyReady(p, 20_000)) this.speech.say(`${spoken(p)}, ${word ? 'das Tier haben wir leider nicht' : 'welches Tier willst du'}. Schreib zum Beispiel haustier katze, haustier pinguin oder haustier panda!`);
+      return;
+    }
+    if (!this.ready('pet:' + p.id, 60_000)) return this.waitHint(p);
     const { x: cx, z: cz } = plotCenter(p.plot);
     // im Vorgarten (Seite zur Kamera) neben dem Weg – dort sieht man es immer
     const fr = frontOf(cx, cz);
@@ -449,12 +530,17 @@ export class Action {
       await this.mc.send(`kill @e[tag=mc_pet_${p.plot}]`);
       // NoAI: das Tier bleibt im Vorgarten stehen und laeuft nicht weg
       const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
-      const r = await this.mc.send(`summon ${pet[0]} ${x} ${BASE} ${z} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
+      const r = pet[0] === 'penguin' ? await summonPenguin(this.mc, x, z, yaw, p.plot, `${p.name}s Pinguin`) : await this.mc.send(`summon ${pet[0]} ${x} ${BASE} ${z} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
       this.log(`[Haustier] ${p.name}: ${pet[0]} -> ${r}`);
       await this.mc.send(`particle minecraft:heart ${x} ${BASE + 1.5} ${z} 0.6 0.4 0.6 0 12 force`);
       await this.mc.send(`particle minecraft:poof ${x} ${BASE + 0.5} ${z} 0.4 0.3 0.4 0.05 20 force`);
       await sleep(4500); // kurz drauf bleiben
     } });
+  }
+
+  /** Freundlicher Hinweis, wenn jemand einen Befehl zu schnell wiederholt */
+  waitHint(p) {
+    if (this.game.chatReplyReady(p, 30_000)) this.speech.say(pick([`${spoken(p)}, kurz durchatmen! In einer Minute geht das wieder.`, `Moment, ${spoken(p)}, ich bin gleich wieder für dich da!`]));
   }
 
   cmdParty(p) {
