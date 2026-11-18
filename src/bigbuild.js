@@ -1,5 +1,7 @@
 // Grosse Gemeinschaftsbauten: belegen 2x2 freie Grundstuecke am Stadtrand (35 x 35 Bloecke).
 // Die Grundstuecksnummern bleiben dabei gleich – Haeuser ueberspringen reservierte Nummern einfach.
+import { wheelStatic } from './wheel.js';
+import { zooStatic } from './zoo.js';
 import { Plan, housePlan, plotCenter, GROUND, BASE, PITCH, frontOf } from './city.js';
 
 /** Halbe Breite der nutzbaren Flaeche um die Mitte des 2x2-Blocks. */
@@ -80,7 +82,11 @@ export function bigPlan(name, x, z) {
     return c;
   };
   ground(p, x, z, 'grass_block');
-  if (name === 'Kino') {
+  if (name === 'Tierpark') {
+    zooStatic(p, x, z);
+  } else if (name === 'Riesenrad') {
+    wheelStatic(p, x, z);
+  } else if (name === 'Kino') {
     ground(p, x, z);
     const c = style({ w: 29, d: 21, floors: 3, wall: 'black_concrete', corner: 'red_concrete', roof: 'red_concrete', window: 'yellow_stained_glass' });
     // roter Teppich und Leuchtreklame vor dem Eingang

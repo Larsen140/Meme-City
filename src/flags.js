@@ -92,3 +92,11 @@ export function flagCommands(p, key) {
   }
   return c;
 }
+
+/** Kamera vor der Fahne: von vorne (Strassenseite), etwas schraeg, Fahne in der Bildmitte */
+export function flagCamera(p) {
+  const { x, z, lateral } = flagSpot(p);
+  const f = frontOf(plotCenter(p.plot).x, plotCenter(p.plot).z);
+  const lx = x + (lateral === 'x' ? W / 2 : 0), lz = z + (lateral === 'z' ? W / 2 : 0), ly = BASE + Y0 + H / 2;
+  return { x: lx + f.dx * 7 + (f.dz ? 1.5 : 0), y: ly + 1.2, z: lz + f.dz * 7 + (f.dx ? 1.5 : 0), lx, ly, lz };
+}

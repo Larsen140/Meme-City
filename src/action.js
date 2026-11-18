@@ -5,7 +5,7 @@
 import { BASE, plotCenter, frontOf, art, cap } from './city.js';
 import { sleep } from './minecraft.js';
 import { CAR_COLORS, CAR_LIKES, CARS_ON } from './carpark.js';
-import { FLAGS, flagCommands } from './flags.js';
+import { FLAGS, flagCommands, flagCamera } from './flags.js';
 import { closest } from './typo.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -17,7 +17,7 @@ const COLORS = {
   dunkelgrün: 'green', gelb: 'yellow', orange: 'orange', lila: 'purple', pink: 'pink', rosa: 'pink',
   schwarz: 'black', weiß: 'white', weiss: 'white', grau: 'gray', braun: 'brown', magenta: 'magenta',
 };
-const PETS = {
+export const PETS = {
   katze: ['cat', 'Katze'], hund: ['wolf', 'Hund'], papagei: ['parrot', 'Papagei'], fuchs: ['fox', 'Fuchs'],
   hase: ['rabbit', 'Hase'], panda: ['panda', 'Panda'], schwein: ['pig', 'Schwein'], kuh: ['cow', 'Kuh'],
   schaf: ['sheep', 'Schaf'], huhn: ['chicken', 'Huhn'], pferd: ['horse', 'Pferd'], frosch: ['frog', 'Frosch'],
@@ -285,6 +285,7 @@ export class Action {
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdPet(p, w || ''), true;
     }
+    if (/^(tierpark|zoo|alle tiere|zeig (mir )?(alle )?tiere)\b/.test(t)) { this.log(`[Befehl] @${p.name}: ${text}`); return this.game.zooTourCmd(p), true; }
     if (/\b(flagge|fahne|flag)\b/.test(t)) {
       const w = words.find((x) => FLAGS[x]) || words.map((x) => (x.length >= 3 && !/flagge|fahne|flag|mein|meine/.test(x) ? closest(x, Object.keys(FLAGS)) : null)).find(Boolean);
       if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> Buergermeister
@@ -401,7 +402,8 @@ export class Action {
     this.game.ack(p, `🚩 **${name}** weht gleich in deinem Garten`);
     this.broadcast({ type: 'ticker', text: `🚩 @${p.name} hisst die Flagge: ${name}!` });
     if (this.ready('flagtalk', 20_000)) this.speech.say(`${spoken(p)} hisst die Flagge von ${name}!`);
-    this.builder.enqueue({ type: 'camera', player: p });
+    // Kamera direkt vor die Fahne
+    this.builder.enqueue({ type: 'fn', fn: async () => { const c = flagCamera(p); await this.builder.camera(c.x, c.y, c.z, c.lx, c.ly, c.lz); await sleep(5000); } });
   }
 
   cmdCar(p, word) {

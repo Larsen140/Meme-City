@@ -279,7 +279,6 @@ export const COMMUNITY_PROJECTS = [
   { name: 'Kino',         goal: 4000, big: true },
   { name: 'Leuchtturm',   goal: 3000 },
   { name: 'Erlebnisbad',  goal: 5000, big: true },
-  { name: 'Riesenrad',    goal: 3500 },
   { name: 'Eisdiele',     goal: 3500 },
   { name: 'Stadion',      goal: 5000 },
   { name: 'Einkaufszentrum', goal: 6000, big: true },

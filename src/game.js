@@ -4,6 +4,8 @@ import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './
 import { findBigSite } from './bigbuild.js';
 import { CAR_LIKES, CARS_ON, parkedCarCommands } from './carpark.js';
 import { Board } from './board.js';
+import { Wheel } from './wheel.js';
+import { spawnZoo, zooTour } from './zoo.js';
 import { COMMUNITY_PROJECTS, COMMUNITY_CELLS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
 import { fixCommand } from './typo.js';
@@ -61,6 +63,8 @@ export class Game {
     setInterval(() => this.likeStats(), 45_000);
     setInterval(() => this.carStats(), 15_000);
     setTimeout(() => { this.board = new Board(this.builder.mc, this.log); }, 8000); // Info-Tafel ueber dem Stadtplatz
+    // Riesenrad weiterdrehen, wenn es schon gebaut wurde
+    setTimeout(() => { const w = this.store.data.bigSites?.['bonus:Riesenrad']; if (w?.built) this.startWheel(w).catch((e) => this.log('[Riesenrad] ' + e.message)); }, 10_000);
     // Wer schon 10.000 Likes hat, bekommt sein Auto nachgeliefert (ohne grosse Ansage)
     setTimeout(() => { for (const p of Object.values(this.store.players)) if (p.plot !== null && p.likes >= CAR_LIKES && !p.car) this.giveCar(p, true); }, 20_000);
     // Chat-Befehle regelmaessig zeigen (versetzt zur Like-Statistik)
@@ -211,13 +215,64 @@ export class Game {
     }
     const site = { ...d.bigSites[key], big: true };
     this.log(`[Bonus-Bau] ${name}: Grundstücke ${site.plots.map((n) => n + 1).join(', ')}`);
+    const wheel = name === 'Riesenrad', zoo = name === 'Tierpark';
     this.builder.enqueue({ type: 'fn', fn: async () => {
-      this.broadcast({ type: 'banner', title: `🍔 NEU: ${name.toUpperCase()}!`, text: 'Meme City bekommt einen Burgerladen', big: true });
-      this.speech.say(`Achtung, Meme City bekommt eine ${name}! Wer hat Bock auf Burger?`, true);
-      await this.builder.buildCommunity('bonus', name, false, site);
-      await new Promise((r) => setTimeout(r, 10_000)); // 10 Sekunden in der Kamera zeigen
+      if (zoo) {
+        this.broadcast({ type: 'banner', title: '🦁 NEU: TIERPARK!', text: 'Alle Haustiere auf einen Blick', big: true });
+        this.speech.say('Meme City hat jetzt einen Tierpark! Da wohnen alle Haustiere, die ihr haben könnt. Schreib tierpark, dann machen wir eine Tour!', true);
+      } else if (wheel) {
+        this.broadcast({ type: 'banner', title: '🎡 NEU: RIESENRAD!', text: 'Es dreht sich wirklich', big: true });
+        this.speech.say('Sheesh! Meme City bekommt ein echtes Riesenrad, und das dreht sich sogar!', true);
+      } else {
+        this.broadcast({ type: 'banner', title: `🍔 NEU: ${name.toUpperCase()}!`, text: 'Meme City bekommt einen Burgerladen', big: true });
+        this.speech.say(`Achtung, Meme City bekommt eine ${name}! Wer hat Bock auf Burger?`, true);
+      }
+      await this.builder.buildCommunity('bonus_' + name.toLowerCase().replace(/[^a-z]/g, ''), name, false, site);
+      if (zoo) {
+        d.bigSites[key].built = true; this.store.save();
+        await spawnZoo(this.builder.mc, site.x, site.z);
+        await this.builder.mc.send(`tp @e[tag=mc_comm_bonus_tierpark] ${site.x} ${BASE_Y + 12} ${site.z + 16}`);
+        await zooTour(this.builder, site.x, site.z);
+      } else if (wheel) {
+        d.bigSites[key].built = true; this.store.save();
+        await this.startWheel(site);
+        await this.showWheel(3, 12_000);
+      } else await new Promise((r) => setTimeout(r, 10_000)); // 10 Sekunden in der Kamera zeigen
     } });
     return true;
+  }
+
+  /** Chat "tierpark": Kamera-Tour durch alle Gehege */
+  zooTourCmd(p) {
+    const site = this.store.data.bigSites?.['bonus:Tierpark'];
+    if (!site?.built) return this.ack(p, '🦁 Der Tierpark wird noch gebaut');
+    if (this.builder.queue.some((j) => j.zoo)) return this.ack(p, '🦁 Tour kommt gleich – schon in der Warteschlange');
+    if (Date.now() - (this._zooAt || 0) < 90_000) return this.ack(p, '🦁 Tour lief gerade – gleich nochmal');
+    this._zooAt = Date.now();
+    this.ack(p, '🦁 Tierpark-Tour startet gleich!');
+    this.broadcast({ type: 'ticker', text: `🦁 @${p.name} startet die Tierpark-Tour!`, highlight: true });
+    this.builder.enqueue({ type: 'fn', zoo: true, fn: async () => {
+      this.broadcast({ type: 'banner', title: '🦁 TIERPARK-TOUR', text: 'Alle Haustiere – schreib z. B. haustier drache', big: true });
+      this.speech.say(`${spoken(p)} will alle Tiere sehen! Ab in den Tierpark!`, true);
+      await zooTour(this.builder, site.x, site.z);
+    } });
+  }
+
+  async startWheel(site) {
+    this.wheel?.timer && clearInterval(this.wheel.timer);
+    this.wheel = new Wheel(this.builder.mc, site.x, site.z, this.log);
+    await this.wheel.spawn();
+    // Namensschild ueber das Rad heben
+    await this.builder.mc.send(`tp @e[tag=mc_comm_bonus_riesenrad] ${site.x} ${BASE_Y + 36} ${site.z}`);
+    this.wheel.start();
+  }
+
+  /** Kamera vor das Riesenrad und eine Weile zuschauen */
+  async showWheel(seconds = 3, holdMs = 10_000, busy) {
+    if (!this.wheel) return;
+    const c = this.wheel.cameraSpot();
+    await this.builder.camera(c.x, c.y, c.z, c.lx, c.ly, c.lz, seconds, !!busy);
+    if (busy) await this.builder.waitIdle(holdMs, busy); else await new Promise((r) => setTimeout(r, holdMs));
   }
 
   reservedPlots() {
@@ -542,7 +597,7 @@ export class Game {
   async idleShow(busy, force) {
     const b = this.builder, fx = this.giftFx;
     const houses = this.ranking();
-    const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights', 'windmill', 'pyramid'];
+    const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights', 'windmill', 'pyramid', ...(this.wheel ? ['wheel', 'wheel'] : [])];
     // jede zweite Show fliegt zur grossen Tafel am Stadtplatz (Geschenke-Seite zuerst)
     this._showN = (this._showN || 0) + 1;
     const show = force || (this._showN % 2 === 0 && this.board ? 'board' : shows[Math.floor(Math.random() * shows.length)]);
@@ -564,6 +619,9 @@ export class Game {
       if (busy()) return;
       if (show === 'train') await fx.vehicle(x, z, fr, 'train');
       else await fx.plane(x, rnd.top ?? BASE_Y + 10, z, fr);
+    } else if (show === 'wheel' && this.wheel) {
+      this.broadcast({ type: 'ticker', text: '🎡 Das Riesenrad von Meme City dreht sich!' });
+      await this.showWheel(3, 10_000, busy);
     } else if (show === 'board' && this.board) {
       // Kamera vor die Tafel, erst die Geschenke-Seite, dann die Befehle
       await b.camera(0, BASE_Y + 18, 26, 0, BASE_Y + 16, 0, 3, true);
@@ -669,6 +727,7 @@ export class Game {
         'Beim Bau-Sprint zählt jede Nachricht und jedes Like doppelt für den Gemeinschaftsbau. Achtet auf den Countdown oben, sonst seid ihr lost!',
         'Bei der Abstimmung entscheidet ihr, was in der Stadt abgeht. Schreibt dann einfach eins, zwei oder drei!',
         'Schreib nord oder süd und zeig beim nächsten Duell, welches Team der Boss ist!',
+        'Du weißt nicht, welches Haustier du willst? Schreib tierpark, dann zeig ich dir alle Tiere!',
         'Neu: Flaggen! Schreib flagge deutschland, flagge türkei oder flagge regenbogen, dann weht deine Fahne im Garten. Wie nice ist das bitte?',
         'Über dreißig Flaggen gibt es schon, von Italien bis Japan. Sogar eine Piratenflagge, arr! Schreib flagge und dein Land.',
       ].filter((t) => t !== this._lastTip);

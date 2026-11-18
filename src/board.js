@@ -14,6 +14,7 @@ export const PAGES = [
     line('zeig mein Haus', '  Kamera fliegt hin'),
     line('farbe rot', '  Dach neu streichen'),
     line('haustier drache', '  über 30 Tiere'),
+    line('tierpark', '  alle Tiere ansehen'),
     line('flagge deutschland', '  Fahne im Garten'),
     line('party', '  Feier bei dir zu Hause'),
     line('nord / süd', '  Team fürs Duell'),
