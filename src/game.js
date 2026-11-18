@@ -342,13 +342,12 @@ export class Game {
     this.claimHouse(p, 'gift');
     this.addPoints(p, coins / this.coinsPerPoint);
     const n = spoken(p);
-    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: `${gift.count > 1 ? gift.count + 'x ' : ''}${gift.name}`, avatar: p.avatar, gift: gift.image, big: coins >= 100 });
-    this.broadcast({ type: 'confetti', amount: Math.min(200, 20 + coins) });
+    // Schlichtes Danke ohne Geschenkname, Geschenkbild und Groessen-Unterschied (TikTok wertet Geschenk-Automatik als Aufforderung)
+    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: 'Schön, dass du da bist 💛', avatar: p.avatar });
     this.broadcast({ type: 'player', card: this.card(p) });
     // Kurzes Danke ohne Geschenknamen und nicht bei jedem Geschenk (TikTok wertet Dauer-Ansagen als Aufforderung)
     if (!this.speech.speaking && !this.speech.queue.length && Math.random() < 0.5) this.speech.say(pick([`Danke, ${n}!`, `${n}, du bist klasse!`, `Merci, ${n}!`]));
-    // Events bei grossen Geschenken
-    if (this.giftFx) this.giftFx.run(p, gift, coins); else this.giftEffect(p, coins);
+    // keine automatischen Effekte mehr, die direkt an ein Geschenk gekoppelt sind (TikTok: mechanisches Auffordern)
     this.pushState();
     this.store.save();
   }
