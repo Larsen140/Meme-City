@@ -5,9 +5,10 @@ import { spawn } from 'child_process';
 
 const SCRIPT = `
 Add-Type -Namespace MC -Name Power -MemberDefinition '[DllImport("kernel32.dll")] public static extern uint SetThreadExecutionState(uint f);'
-# ES_CONTINUOUS | ES_SYSTEM_REQUIRED (PC bleibt wach, Bildschirm darf aus)
+# ES_CONTINUOUS | ES_SYSTEM_REQUIRED | ES_DISPLAY_REQUIRED: PC UND Bildschirm bleiben an.
+# (Bei ausgeschaltetem Bildschirm zeichnet LIVE Studio das Overlay nur noch mit ~7 Bildern pro Sekunde.)
 while ($true) {
-  [MC.Power]::SetThreadExecutionState([uint32]"0x80000001") | Out-Null
+  [MC.Power]::SetThreadExecutionState([uint32]"0x80000003") | Out-Null
   if (-not (Get-Process -Id ([int]$env:MC_PARENT) -ErrorAction SilentlyContinue)) { break }
   Start-Sleep -Seconds 30
 }

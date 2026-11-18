@@ -91,7 +91,8 @@
   #pause .logo { font-size: 150px; font-weight: 800; line-height: 1; color: #ffd84d; -webkit-text-stroke: 10px #1b1240; paint-order: stroke fill; }
   #pause .txt { font-size: 64px; font-weight: 800; margin-top: 30px; }
   #pause .sub { font-size: 44px; color: #ffe9f1; }
-  #pause .dots::after { content: ''; animation: dots 1.5s steps(4) infinite; }
+  #pause .dots::after { content: '...'; }
+  #pause.show .dots::after { animation: dots 1.5s steps(4) infinite; }
   @keyframes dots { 0% { content: ''; } 25% { content: '.'; } 50% { content: '..'; } 75% { content: '...'; } }
 
   /* ---------- Banner ---------- */
@@ -215,6 +216,75 @@
   #bubble { contain: none; } /* sonst wird der Sprechblasen-Zipfel abgeschnitten */
   #player, #likestats, #help, #banner, #goal, #almost, #mayor, #bubble { will-change: transform, opacity; }
   .bar i { transition: width .4s linear; }
+
+  body.bare > * { display: none !important; }
+
+
+  /* ---------- Design-Feinschliff ---------- */
+  :root { --panel-top: #3a2a8c; --panel-bot: #140f33; }
+  .panel { background: linear-gradient(180deg, var(--panel-top) 0%, var(--panel-bot) 70%) !important; border: 2px solid rgba(255,255,255,.22) !important;
+    box-shadow: 0 8px 22px rgba(0,0,0,.45) !important; border-radius: 26px; }
+  .panel::before { height: 6px !important; }
+  #board::before { background: linear-gradient(90deg, #ffc93c, #ff9f1c) !important; }
+  #honor::before { background: linear-gradient(90deg, #ffd84d, #ff3d7f) !important; }
+  #comm::before { background: linear-gradient(90deg, #3df5b0, #4cc9ff) !important; }
+  #goal::before { background: linear-gradient(90deg, #ff3d7f, #ffc93c) !important; }
+  #head::before { background: linear-gradient(90deg, #ff3d7f, #ffc93c, #3df5b0, #4cc9ff) !important; }
+  /* Kopfzeile */
+  #logo { background: linear-gradient(90deg, #ffe066, #ff8a3d 55%, #ff3d7f) !important; -webkit-background-clip: text !important; background-clip: text !important; color: transparent !important; }
+  .chip { background: rgba(255,255,255,.10) !important; border: 2px solid rgba(255,255,255,.14); border-radius: 18px; }
+  .chip b { color: #fff; }
+  /* Top 5 mit Medaillen */
+  .row { border-radius: 14px; margin: 2px 0; }
+  .row:nth-child(1) { background: linear-gradient(90deg, rgba(255,201,60,.28), transparent); }
+  .row:nth-child(2) { background: linear-gradient(90deg, rgba(220,220,235,.20), transparent); }
+  .row:nth-child(3) { background: linear-gradient(90deg, rgba(224,154,90,.22), transparent); }
+  .row .pos { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,.12); font-size: 22px; flex: none; }
+  .row:nth-child(1) .pos { background: #ffc93c; color: #3a2400; } .row:nth-child(2) .pos { background: #dcdce8; color: #2a2a3a; } .row:nth-child(3) .pos { background: #e09a5a; color: #3a1f00; }
+  .row img, .row .ava { border: 2px solid rgba(255,255,255,.5); }
+  .row .lv { background: rgba(61,245,176,.16); padding: 0 10px; border-radius: 10px; }
+  /* Ehrenbuergermeister */
+  #honor img, #honor .ava { border: 4px solid #ffd84d; }
+  /* Balken */
+  .bar { background: rgba(0,0,0,.35) !important; border: 1px solid rgba(255,255,255,.12); }
+  .bar i { background: linear-gradient(90deg, #3df5b0, #4cc9ff) !important; }
+  #goal .gbar i { background: linear-gradient(90deg, #ff3d7f, #ffc93c) !important; }
+  /* Spieler-Karte */
+  #player { border-color: rgba(255,61,127,.6) !important; }
+  #player img, #player .ava { border-radius: 24px; border: 4px solid #ff3d7f; }
+  /* Laufband */
+  #ticker { background: linear-gradient(90deg, #1c1250, #2a1868) !important; border-top: 3px solid #ff3d7f; border-bottom: 3px solid #ff3d7f; }
+  #ticker .lab { background: linear-gradient(135deg, #ff3d7f, #ff7a45) !important; letter-spacing: 2px; }
+  #ticker .run.hl { color: #ffd84d; }
+  /* Sprechblase */
+  #bubble { background: #fff !important; border-radius: 26px; box-shadow: 0 6px 16px rgba(0,0,0,.35) !important; color: #1b1240; }
+  #mayorPic .frame { border-radius: 30px; }
+  #mayorName { background: linear-gradient(90deg, #ff3d7f, #ff7a45); border: 2px solid #fff; }
+
+  /* ---------- Kurze Animationen (laufen einmal, dann Ruhe) ---------- */
+  .chip.bump { animation: bump .5s ease; }
+  @keyframes bump { 40% { transform: scale(1.18); } }
+  .row.rise { animation: rise 1.2s ease; }
+  @keyframes rise { 0% { background: rgba(61,245,176,.55); transform: translateX(12px); } 100% { transform: none; } }
+  #player .bar i { transition: width .9s cubic-bezier(.2,.8,.2,1); }
+  #banner { overflow: hidden; }
+  #banner.shine::after { content: ''; position: absolute; top: 0; bottom: 0; width: 120px; left: -160px;
+    background: linear-gradient(100deg, transparent, rgba(255,255,255,.55), transparent); animation: shine .9s ease .2s 1 forwards; }
+  @keyframes shine { to { left: 110%; } }
+  #banner { transition: opacity .25s ease, transform .3s ease !important; }
+  /* grosse Flaechen nur kurz und schlicht bewegen (LIVE Studio rechnet grosse Bewegungen langsam) */
+  #help, #likestats, #player { transition: opacity .25s ease, transform .25s ease !important; }
+  #bubble { transform-origin: left bottom; }
+  #mayor.talking #bubble { animation: pop .3s cubic-bezier(.2,1.6,.4,1); }
+  @keyframes pop { 0% { transform: scale(.7); } 100% { transform: scale(1); } }
+  #ticker .run { transition: opacity .25s, transform .25s; }
+  #ticker .run.out { transform: translateY(14px) !important; }
+
+  /* ---------- Passt sich jeder Fenstergroesse an ----------
+     LIVE Studio begrenzt die Hoehe des Link-Fensters manchmal (z. B. auf 960). Das Overlay wird
+     dann komplett verkleinert statt unten abgeschnitten. */
+  html { width: 100% !important; height: 100% !important; overflow: hidden !important; background: transparent; }
+  body { position: absolute !important; left: 0; top: 0; width: 1080px !important; height: 1920px !important; transform-origin: 0 0; }
 </style>
 </head>
 <body>
@@ -268,16 +338,44 @@ const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
 const ava = (src, cls = 'ava') => src ? `<img src="${esc(src)}" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'${cls}'}))">` : `<div class="${cls}"></div>`;
 if (location.search.includes('preview')) document.body.classList.add('preview');
+function fitOverlay() {
+  const s = Math.min(innerWidth / 1080, innerHeight / 1920) || 1;
+  document.body.style.transform = `translate(${(innerWidth - 1080 * s) / 2}px, ${(innerHeight - 1920 * s) / 2}px) scale(${s})`;
+}
+addEventListener('resize', fitOverlay);
+fitOverlay();
 
 // ---------- Zustand ----------
 const _html = {};
 function setHTML(id, html) { if (_html[id] === html) return; _html[id] = html; $(id).innerHTML = html; }
+// Zahl zaehlt kurz hoch und das Kaestchen huepft (einmalig, danach Ruhe)
+const _num = {};
+function countTo(id, to) {
+  const el = $(id), from = _num[id];
+  _num[id] = to;
+  if (from === undefined || from === to) { el.textContent = fmt(to); return; }
+  const start = performance.now(), dur = 700;
+  const step = (t) => { const k = Math.min(1, (t - start) / dur); el.textContent = fmt(from + (to - from) * (1 - Math.pow(1 - k, 3))); if (k < 1) requestAnimationFrame(step); };
+  requestAnimationFrame(step);
+  if (to > from) { const chip = el.parentElement; chip.classList.remove('bump'); void chip.offsetWidth; chip.classList.add('bump'); }
+}
+// Wer in der Top 5 aufsteigt, leuchtet kurz auf
+let _lastTop = [];
+function flashRisers(top) {
+  const names = top.slice(0, 5).map((p) => p.name);
+  requestAnimationFrame(() => {
+    [...document.querySelectorAll('#rows .row')].forEach((row, i) => {
+      const before = _lastTop.indexOf(names[i]);
+      if (_lastTop.length && (before === -1 || before > i)) { row.classList.remove('rise'); void row.offsetWidth; row.classList.add('rise'); }
+    });
+    _lastTop = names;
+  });
+}
 function renderState(s) {
   $('cityName').textContent = (s.city || 'Meme City').toUpperCase();
   $('mayorName').textContent = s.mayorName;
-  $('houses').textContent = fmt(s.houses);
-  $('citizens').textContent = fmt(s.citizens);
-  $('pets').textContent = fmt(s.pets || 0);
+  countTo('houses', s.houses); countTo('citizens', s.citizens); countTo('pets', s.pets || 0);
+  flashRisers(s.top);
   setHTML('rows', s.top.length ? s.top.slice(0, 5).map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
     : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>');
   setHTML('honor', s.honorary
@@ -314,6 +412,7 @@ function showPlayer(c) {
     <div class="bar"><i style="width:${Math.round(c.progress * 100)}%"></i></div><div class="need">${need}</div></div>
     ${c.hasHouse ? `<div class="rank">Platz<b>#${c.rank}</b>von ${fmt(c.houses)}</div>` : ''}`;
   $('player').classList.add('show');
+  const pb = $('player').querySelector('.bar i'); if (pb) { const w = pb.style.width; pb.style.width = '0%'; requestAnimationFrame(() => requestAnimationFrame(() => { pb.style.width = w; })); }
   clearTimeout(playerTimer);
   playerTimer = setTimeout(() => $('player').classList.remove('show'), 9000);
 }
@@ -403,7 +502,8 @@ function showBanner(b) {
   const el = $('banner');
   el.className = 'panel' + (b.big ? ' big' : '');
   el.innerHTML = `${b.avatar ? ava(b.avatar) : ''}<div><div class="t">${esc(b.title)}</div><div class="s">${esc(b.text)}</div></div>${b.gift ? `<img src="${esc(b.gift)}" style="border:none;border-radius:0">` : ''}`;
-  requestAnimationFrame(() => el.classList.add('show'));
+  el.classList.remove('shine');
+  requestAnimationFrame(() => { el.classList.add('show'); el.classList.add('shine'); });
   clearTimeout(bannerTimer);
   bannerTimer = setTimeout(() => el.classList.remove('show'), b.big ? 6000 : 3800);
   mayorPose(b.big ? 'cheer' : 'point', 2500);
@@ -418,22 +518,25 @@ function showAlmost(c) {
 }
 
 // ---------- Laufband ----------
+// Kein Dauer-Scrollen mehr: LIVE Studio rechnet ohne Grafikkarte und schafft bei
+// staendiger Bewegung nur ~8 Bilder/s fuer das ganze Overlay. Stattdessen wechselt der
+// Text alle paar Sekunden mit kurzem Einblenden – danach ist alles wieder ruhig.
 const tickerQueue = [];
-let tickerBusy = false;
+const tickerDefaults = ['Willkommen in Meme City! 🏙️', 'Schreib „Haus“ in den Chat 🏠', 'Schreib „zeig mein Haus“ ✈️', '„haustier katze“ · „farbe rot“ · „party“ 🎉'];
+let tickerIdx = 0;
 function ticker(text, hl) {
   tickerQueue.push({ text, hl });
   if (tickerQueue.length > 6) tickerQueue.shift();
-  if (!tickerBusy) nextTicker();
 }
 function nextTicker() {
-  const item = tickerQueue.shift() || { text: 'Willkommen in Meme City! Schreib „Haus“ in den Chat und bau mit!' };
-  tickerBusy = true;
+  const item = tickerQueue.shift() || { text: tickerDefaults[tickerIdx++ % tickerDefaults.length] };
   const run = $('run');
-  run.textContent = item.text;
-  run.className = 'run' + (item.hl ? ' hl' : '');
-  const w = run.scrollWidth, dist = 1080 + w, speed = 220;
-  run.style.left = '0px';
-  run.animate([{ transform: 'translateX(1080px)' }, { transform: `translateX(${-w}px)` }], { duration: dist / speed * 1000, easing: 'linear' }).onfinish = () => { tickerBusy = false; nextTicker(); };
+  run.classList.add('out');
+  setTimeout(() => {
+    run.textContent = item.text;
+    run.className = 'run' + (item.hl ? ' hl' : '');
+  }, 250);
+  setTimeout(nextTicker, tickerQueue.length ? 3500 : 5000);
 }
 nextTicker();
 
@@ -480,7 +583,11 @@ function part(sx, sy, sw, sh, dx, dy, s) {
 }
 let lastDraw = 0;
 function drawMayor(t) {
-  if (t - lastDraw < 33) { requestAnimationFrame(drawMayor); return; }
+  if (window.__bare) { requestAnimationFrame(drawMayor); return; }
+  if (t - lastDraw < 66) { requestAnimationFrame(drawMayor); return; } // hoechstens 15 Bilder pro Sekunde
+  { const mm = $('mayor'); const active = mm.classList.contains('talking') || mm.classList.contains('cheer') || mm.classList.contains('point') || Math.abs(armR) > 0.02 || Math.abs(armL) > 0.02 || hop > 0.2;
+    if (!active && window.__idleDrawn) { requestAnimationFrame(drawMayor); return; }
+    window.__idleDrawn = !active; }
   lastDraw = t;
   const m = $('mayor');
   const s = 13, aw = slim ? 3 : 4;
@@ -491,7 +598,7 @@ function drawMayor(t) {
   const targetL = cheer ? 2.6 : talking ? 0.12 + Math.sin(t / 310) * 0.08 : 0;
   armR += (targetR - armR) * 0.18; armL += (targetL - armL) * 0.18;
   hop = cheer ? Math.abs(Math.sin(t / 140)) * 16 : hop * 0.8;
-  const breathe = Math.sin(t / 600) * 2;
+  const breathe = 0; // kein Dauer-Atmen (spart Rechenzeit)
 
   mctx.clearRect(0, 0, 300, 330);
   mctx.imageSmoothingEnabled = false;
@@ -551,7 +658,7 @@ function likeBubble(l) {
 const cv = $('confetti'), cx = cv.getContext('2d');
 let parts = [];
 function confetti(n) {
-  n = Math.min(n, 90);
+  n = Math.min(n, 40);
   if (parts.length > 150) return;
   const cols = ['#ff3d7f', '#ffc93c', '#3df5b0', '#4cc9ff', '#ffffff', '#b06bff'];
   for (let i = 0; i < n; i++) parts.push({ x: 150 + Math.random() * 200, y: 1500, vx: (Math.random() - 0.2) * 14, vy: -14 - Math.random() * 16, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, c: cols[i % cols.length], s: 8 + Math.random() * 10 });
@@ -572,8 +679,20 @@ function connect() {
   const ws = new WebSocket(`ws://${location.host}`);
   ws.onopen = () => { $('status').textContent = ''; };
   ws.onclose = () => { $('status').textContent = 'Spielprogramm nicht verbunden …'; setTimeout(connect, 2000); };
+  // Messwerte ans Programm (nur zur Fehlersuche): Sichtbarkeit, Timer-Verzoegerung, Bilder pro Sekunde
+  let frames = 0; const countFrame = () => { frames++; requestAnimationFrame(countFrame); }; requestAnimationFrame(countFrame);
+  let lastTick = performance.now();
+  clearInterval(window.__diag);
+  window.__diag = setInterval(() => {
+    const now = performance.now(), drift = Math.round(now - lastTick - 2000); lastTick = now;
+    if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'diag', vis: document.visibilityState, hidden: document.hidden, drift, fps: Math.round(frames / 2), w: innerWidth, h: innerHeight, ua: navigator.userAgent.slice(-60) }));
+    frames = 0;
+  }, 2000);
   ws.onmessage = (e) => {
     const m = JSON.parse(e.data);
+    if (m.type === 'css') { let st = document.getElementById('__css'); if (!st) { st = document.createElement('style'); st.id = '__css'; document.head.appendChild(st); } st.textContent = m.css || ''; }
+    if (m.type === 'hidesel') { let st = document.getElementById('__hs'); if (!st) { st = document.createElement('style'); st.id = '__hs'; document.head.appendChild(st); } st.textContent = m.sel ? m.sel + ' { display: none !important; }' : ''; }
+    if (m.type === 'bare') { document.body.classList.toggle('bare', !!m.on); window.__bare = !!m.on; }
     if (m.type === 'hello') { if (window.__v && window.__v !== m.version) location.reload(); window.__v = m.version; }
     if (m.type === 'state') { renderState(m.state); renderGifts(m.state); }
     else if (m.type === 'player') { ['likestats', 'help', 'gifts'].forEach((id) => $(id).classList.remove('show')); showPlayer(m.card); }

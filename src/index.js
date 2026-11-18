@@ -102,6 +102,7 @@ tiktok.onStatus = (s) => broadcast({ type: 'tiktok', status: s });
 
 const VERSION = String(Date.now()); // aendert sich bei jedem Neustart -> Overlay laedt sich selbst neu
 wss.on('connection', (ws) => {
+  ws.on('message', (m) => { try { const d = JSON.parse(m); if (d.type === 'diag') fs.appendFileSync(path.join(root, 'data', 'overlay-diag.log'), new Date().toLocaleTimeString('de-DE') + ' ' + JSON.stringify(d) + String.fromCharCode(10)); } catch {} });
   ws.send(JSON.stringify({ type: 'hello', version: VERSION }));
   ws.send(JSON.stringify({ type: 'state', state: game.state() }));
   ws.send(JSON.stringify({ type: 'tiktok', status: tiktok.status }));
@@ -153,6 +154,9 @@ app.post('/api/showcase', (req, res) => {
 });
 // Event von Hand ausloesen (Testpanel): Tornado, Meteorregen, Feuerwerk-Show, Regenbogen, Schneesturm, Party
 app.post('/api/event/:name', (req, res) => { builder.enqueue({ type: 'fn', fn: () => game.action.runEvent(req.params.name) }); res.json({ ok: true }); });
+app.post('/api/css', (req, res) => { broadcast({ type: 'css', css: String(req.body.css || '') }); res.json({ ok: true }); });
+app.post('/api/hidesel', (req, res) => { broadcast({ type: 'hidesel', sel: String(req.body.sel || '') }); res.json({ ok: true }); });
+app.post('/api/bare', (req, res) => { broadcast({ type: 'bare', on: !!req.body.on }); res.json({ ok: true }); });
 app.get('/api/state', (req, res) => res.json({ ...game.state(), tiktok: tiktok.status, minecraft: mc.connected }));
 app.get('/api/player/:name', (req, res) => {
   const p = store.players[req.params.name.toLowerCase().replace(/^@/, '')];
