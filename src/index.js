@@ -14,6 +14,7 @@ import { TikTok } from './tiktok.js';
 import { CityLife } from './life.js';
 import { Music } from './music.js';
 import { Action } from './action.js';
+import { GiftFx } from './giftfx.js';
 import { plotCenter, roadCommands, lampCommands } from './city.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -55,6 +56,7 @@ const store = new Store(path.join(root, 'data', 'save.json'));
 const game = new Game({ store, builder, speech, config, broadcast, log });
 const tiktok = new TikTok(config.tiktokName, game, log);
 game.action = new Action({ game, builder, speech, broadcast, config, log });
+game.giftFx = new GiftFx({ game, builder, speech, broadcast, log });
 
 // Hintergrundmusik, beim Sprechen des Buergermeisters leiser
 const music = new Music({
@@ -154,6 +156,7 @@ server.listen(config.webPort || 3000, async () => {
     if (p.plot !== null && (p.builtLevel || 0) < p.level) builder.enqueue({ type: 'build', player: p, instant: true });
   }
   game.ensureFreePlots();
+  game.giftFx.checkCrown(); // Krone fuer den aktuellen Ehrenbuergermeister
   const life = new CityLife(mc, { people: config.people ?? 40 }, log);
   life.start(store);
   broadcast({ type: 'mc', connected: true });

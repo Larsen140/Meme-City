@@ -326,6 +326,16 @@ function showHelp() {
   helpTimer = setTimeout(() => $('help').classList.remove('show'), 12000);
 }
 
+// ---------- Top-Unterstuetzer ----------
+function showSupporters(s) {
+  $('likestats').innerHTML = `<div class="head"><div class="ptitle" style="color:var(--gold)">🎁 TOP-UNTERSTÜTZER HEUTE</div><span>Danke euch! 💛</span></div>
+    <div class="rows">${s.top.map((p, i) => `<div class="r"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="n" style="color:var(--gold)">${fmt(p.coins)} 🪙</div></div>`).join('')}</div>`;
+  ['player', 'help', 'gifts'].forEach((id) => $(id).classList.remove('show'));
+  $('likestats').classList.add('show');
+  clearTimeout(statsTimer);
+  statsTimer = setTimeout(() => $('likestats').classList.remove('show'), 9000);
+}
+
 // ---------- Banner ----------
 let bannerTimer;
 function showBanner(b) {
@@ -500,6 +510,7 @@ function connect() {
     else if (m.type === 'player') { ['likestats', 'help', 'gifts'].forEach((id) => $(id).classList.remove('show')); showPlayer(m.card); }
     else if (m.type === 'likestats') showLikeStats(m);
     else if (m.type === 'goal') showGoal(m);
+    else if (m.type === 'supporters') showSupporters(m);
     else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);
     else if (m.type === 'raffle') showRaffle(m);

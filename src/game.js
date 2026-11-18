@@ -272,7 +272,7 @@ export class Game {
     if (coins < 30) this.speech.say(pick([`Danke für ${gift.name}, ${n}!`, `${n}, danke dir!`, `Ein ${gift.name} von ${n}. Merci!`]));
     else this.speech.say(pick([`Wow, ${n}! Vielen Dank für ${gift.name}!`, `Applaus für ${n}!`, `${n} lässt es krachen! Danke!`]), true);
     // Events bei grossen Geschenken
-    this.giftEffect(p, coins);
+    if (this.giftFx) this.giftFx.run(p, gift, coins); else this.giftEffect(p, coins);
     this.pushState();
     this.store.save();
   }
