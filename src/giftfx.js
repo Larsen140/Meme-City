@@ -291,7 +291,6 @@ export class GiftFx {
       ['light_blue_stained_glass', T(-0.6, 1.2, 2.6, 1.2, 0.5, 1)],
     ];
     for (const [b, tr] of parts) await mc.send(`summon block_display ${sx} ${y} ${sz} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${tr}}`);
-    await mc.send(`playsound minecraft:item.elytra.flying master @a ${x} ${y} ${z} 2 1`);
     await sleep(150);
     for (let k = 0; k < 2; k++) {
       await mc.send(`execute as @e[tag=${tag}] at @s run tp @s ~${along.x * 40} ~ ~${along.z * 40}`);

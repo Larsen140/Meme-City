@@ -315,7 +315,7 @@ export class Action {
           cmds.push(`particle minecraft:block{block_state:"minecraft:dirt"} ${cx.toFixed(1)} ${BASE + 3} ${cz.toFixed(1)} 3 2 3 0 60 force`);
           cmds.push(`particle minecraft:block{block_state:"minecraft:oak_leaves"} ${cx.toFixed(1)} ${BASE + 12} ${cz.toFixed(1)} 5 6 5 0 40 force`);
         }
-        if (step % 8 === 0) cmds.push(`playsound minecraft:item.elytra.flying master @a ${cx.toFixed(1)} ${BASE + 5} ${cz.toFixed(1)} 4 0.5`);
+        if (step % 8 === 0) cmds.push(`playsound minecraft:weather.rain master @a ${cx.toFixed(1)} ${BASE + 5} ${cz.toFixed(1)} 3 0.5`);
         await mc.sendAll(cmds);
         step++;
         await sleep(150);

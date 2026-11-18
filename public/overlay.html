@@ -767,7 +767,7 @@ function connect() {
   clearInterval(window.__diag);
   window.__diag = setInterval(() => {
     const now = performance.now(), drift = Math.round(now - lastTick - 2000); lastTick = now;
-    if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'diag', vis: document.visibilityState, hidden: document.hidden, drift, fps: Math.round(frames / 2), w: innerWidth, h: innerHeight, ua: navigator.userAgent.slice(-60) }));
+    if (ws.readyState === 1) ws.send(JSON.stringify({ type: 'diag', vis: document.visibilityState, hidden: document.hidden, drift, fps: Math.round(frames / 2), w: innerWidth, h: innerHeight, dpr: devicePixelRatio, sw: screen.width, sh: screen.height, ua: navigator.userAgent.slice(-60) }));
     frames = 0;
   }, 2000);
   ws.onmessage = (e) => {
