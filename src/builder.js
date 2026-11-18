@@ -289,7 +289,7 @@ export class Builder {
 
   async firework(x, y, z, big = false) {
     const colors = [COLORS[Math.floor(Math.random() * COLORS.length)], COLORS[Math.floor(Math.random() * COLORS.length)]];
-    const shape = big ? 'large_ball' : ['ball', 'star', 'burst'][Math.floor(Math.random() * 3)];
+    const shape = big ? 'large_ball' : ['small_ball', 'star', 'burst'][Math.floor(Math.random() * 3)];
     await this.mc.send(`summon firework_rocket ${x} ${y} ${z} {LifeTime:${big ? 30 : 20},FireworksItem:{id:"firework_rocket",count:1,` +
       `components:{"minecraft:fireworks":{flight_duration:1,explosions:[{shape:"${shape}",colors:[I;${colors.join(',')}],has_twinkle:true,has_trail:true}]}}}}`);
   }
