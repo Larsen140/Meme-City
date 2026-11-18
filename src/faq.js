@@ -41,7 +41,7 @@ export function answer(game, p, t, name) {
     [/party|feier/, () => `Schreib party, dann gibt es Feuerwerk bei deinem Haus!`],
     [/nord|süd|sued|team|duell|kampf/, () => `Alle paar Minuten kämpfen Nord gegen Süd. Schreib nord oder süd und like für dein Team. Die Gewinner bekommen Bonuspunkte!`],
     [/abstimm|wählen|waehlen|voting|verlosung|was passiert (als nächstes|gleich)/, () => `Alle paar Minuten stimmt ihr ab, was passiert. Schreib dann eins, zwei oder drei. Jede Stimme gibt auch einen Punkt fürs Haus!`],
-    [/befehl|was kann (man|ich)|was (geht|gibt es)|commands?/, () => `Du kannst schreiben: Haus, zeig mein Haus, farbe rot, haustier pinguin, party, nord oder süd. Probier's aus!`],
+    [/befehl|was kann (man|ich)|was (geht|gibt es)|commands?/, () => `Du kannst schreiben: Haus, zeig mein Haus, farbe rot, haustier pinguin, flagge deutschland, auto rot, party, nord oder süd. Probier's aus!`],
     // ---- Haus bekommen und aufsteigen ----
     [/(wie|wo).*(bekomm|krieg|kriege|hol|mach).*(\bhaus\b|grundstück|grundstueck)|haus (bekommen|kriegen|haben)|mitmachen|mitspielen|wie spielt man|wie geht (das|es)|wie funktioniert/, () =>
       `Ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Grundstück. Mit Likes wird dein Haus Stufe für Stufe größer!`],

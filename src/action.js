@@ -5,6 +5,7 @@
 import { BASE, plotCenter, frontOf, art, cap } from './city.js';
 import { sleep } from './minecraft.js';
 import { CAR_COLORS, CAR_LIKES } from './carpark.js';
+import { FLAGS, flagCommands } from './flags.js';
 import { closest } from './typo.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -278,6 +279,12 @@ export class Action {
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdPet(p, w || ''), true;
     }
+    if (/\b(flagge|fahne|flag)\b/.test(t)) {
+      const w = words.find((x) => FLAGS[x]) || words.map((x) => (x.length >= 3 && !/flagge|fahne|flag|mein|meine/.test(x) ? closest(x, Object.keys(FLAGS)) : null)).find(Boolean);
+      if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> Buergermeister
+      this.log(`[Befehl] @${p.name}: ${text}`);
+      return this.cmdFlag(p, w || ''), true;
+    }
     if (/^auto\b|\bauto ?farbe\b|\bmein auto\b/.test(t)) {
       const w = words.find((x) => CAR_COLORS[x]) || words.map((x) => (x.length >= 3 && !/auto|farbe|mein/.test(x) ? closest(x, Object.keys(CAR_COLORS)) : null)).find(Boolean);
       this.log(`[Befehl] @${p.name}: ${text}`);
@@ -375,6 +382,20 @@ export class Action {
     const need = c.nextLevel ? Math.max(1, Math.ceil(c.coinsNeeded)) : 0;
     if (need) this.game.addPoints(p, need);
     else this.builder.enqueue({ type: 'camera', player: p });
+  }
+
+  cmdFlag(p, key) {
+    if (p.plot === null) return this.game.ack(p, '🏠 Erst ein Haus – schreib **Haus**');
+    if (!key) return this.game.ack(p, '🚩 Flagge unbekannt – z. B. **flagge deutschland**, **flagge türkei**');
+    if (!this.ready('flag:' + p.id, 60_000)) return this.waitHint(p, 'Flagge');
+    const name = FLAGS[key][0];
+    p.flag = key;
+    this.game.store.save();
+    this.builder.enqueue({ type: 'fn', fn: () => this.mc.sendAll(flagCommands(p, key)) });
+    this.game.ack(p, `🚩 **${name}** weht gleich in deinem Garten`);
+    this.broadcast({ type: 'ticker', text: `🚩 @${p.name} hisst die Flagge: ${name}!` });
+    if (this.ready('flagtalk', 20_000)) this.speech.say(`${spoken(p)} hisst die Flagge von ${name}!`);
+    this.builder.enqueue({ type: 'camera', player: p });
   }
 
   cmdCar(p, word) {

@@ -3,6 +3,7 @@ import fs from 'fs';
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
 import { findBigSite } from './bigbuild.js';
 import { CAR_LIKES, parkedCarCommands } from './carpark.js';
+import { Board } from './board.js';
 import { COMMUNITY_PROJECTS, COMMUNITY_CELLS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
 import { fixCommand } from './typo.js';
@@ -58,6 +59,7 @@ export class Game {
     this.likeLog = [];             // fuer "Likes pro Minute"
     setInterval(() => this.likeStats(), 45_000);
     setInterval(() => this.carStats(), 15_000);
+    setTimeout(() => { this.board = new Board(this.builder.mc, this.log); }, 8000); // Info-Tafel ueber dem Stadtplatz
     // Wer schon 10.000 Likes hat, bekommt sein Auto nachgeliefert (ohne grosse Ansage)
     setTimeout(() => { for (const p of Object.values(this.store.players)) if (p.plot !== null && p.likes >= CAR_LIKES && !p.car) this.giveCar(p, true); }, 20_000);
     // Chat-Befehle regelmaessig zeigen (versetzt zur Like-Statistik)
@@ -630,6 +632,8 @@ export class Game {
         'Beim Bau-Sprint zählt jede Nachricht und jedes Like doppelt für den Gemeinschaftsbau. Achtet auf den Countdown oben, sonst seid ihr lost!',
         'Bei der Abstimmung entscheidet ihr, was in der Stadt abgeht. Schreibt dann einfach eins, zwei oder drei!',
         'Schreib nord oder süd und zeig beim nächsten Duell, welches Team der Boss ist!',
+        'Neu: Flaggen! Schreib flagge deutschland, flagge türkei oder flagge regenbogen, dann weht deine Fahne im Garten. Wie nice ist das bitte?',
+        'Über dreißig Flaggen gibt es schon, von Italien bis Japan. Sogar eine Piratenflagge, arr! Schreib flagge und dein Land.',
       ].filter((t) => t !== this._lastTip);
       this._lastTip = pick(tips);
       this.speech.say(this._lastTip);
@@ -639,6 +643,7 @@ export class Game {
       'Schreib „Zeig mein Haus“ und die Kamera fliegt hin!',
       'Chat-Befehle: „farbe rot“ · „haustier pinguin“ · „party“ · „nord“ / „süd“',
       '🐾 Haustiere: Katze · Hund · Pinguin · Löwe · Drache · Faultier · Panda · Fuchs · Axolotl · Enderman · Wither …',
+      '🚩 Flaggen: flagge deutschland · türkei · italien · polen · ukraine · usa · japan · regenbogen · piraten …',
       '🎨 Dachfarben: rot · blau · hellblau · türkis · grün · gelb · orange · lila · pink · schwarz · weiß · magenta',
       s.top[0] ? `👑 Platz 1: @${s.top[0].name} (Stufe ${s.top[0].level})` : 'Wer wird Platz 1?',
     ]) });

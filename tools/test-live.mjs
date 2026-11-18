@@ -22,6 +22,7 @@ const cases = [
   ['haustier löwe', /Erst ein Haus/],
   ['party', /Erst ein Haus/],
   ['auto rot', /Erst ein Haus/],
+  ['flagge deutschland', /Erst ein Haus/],
   ['nord', /NORD/],
   ['süd', /SÜD/],
   ['zeig mein haus', /.+/],
