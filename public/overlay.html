@@ -165,6 +165,25 @@
   @keyframes rise { 0% { transform: translate(0,0) scale(.4); opacity: 0; } 15% { opacity: 1; transform: translate(0,-60px) scale(1); } 100% { transform: translate(var(--dx), -560px) scale(.8); opacity: 0; } }
   #confetti { position: absolute; inset: 0; pointer-events: none; }
   #status { position: absolute; top: 4px; right: 40px; font-size: 16px; color: var(--muted); }
+
+  /* ---------- Lesbarkeit (fuers Handy): groessere Schrift, dunklere Tafeln, Schatten ---------- */
+  :root { --panel: rgba(12, 10, 30, 0.93); --line: rgba(255, 255, 255, 0.28); --muted: #d6d2f5; }
+  body { text-shadow: 0 2px 4px rgba(0,0,0,.85); }
+  .panel { border-width: 3px; }
+  .ptitle { font-size: 30px; letter-spacing: 2px; }
+  .chip b { font-size: 46px; } .chip span { font-size: 21px; }
+  .row { font-size: 28px; padding: 6px 4px; } .row .lv { font-size: 25px; } .row img, .row .ava { width: 46px; height: 46px; }
+  #honor .lbl { font-size: 22px; } #honor .nm { font-size: 32px; } #honor .sub { font-size: 23px; }
+  #comm .nums { font-size: 29px; } .bar { height: 30px; }
+  #goal { height: 78px; } #goal .lab, #goal .num { font-size: 30px; } #goal .next { font-size: 25px; } #goal .time { font-size: 34px; }
+  #player .nm { font-size: 46px; } #player .lvl { font-size: 33px; } #player .need { font-size: 27px; color: #fff; } #player .rank { font-size: 23px; } #player .rank b { font-size: 50px; }
+  #likestats .r, #help .c { font-size: 27px; } #likestats .head span { font-size: 25px; } #likestats .head span b { font-size: 34px; }
+  #help .c span { color: #fff; }
+  #banner .t { font-size: 52px; } #banner .s { font-size: 36px; }
+  #bubble { font-size: 38px; text-shadow: none; }
+  #ticker { height: 82px; } #ticker .lab { font-size: 34px; } #ticker .run { font-size: 42px; }
+  #mayorName { font-size: 24px; }
+  #almost { font-size: 38px; text-shadow: none; }
 </style>
 </head>
 <body>
