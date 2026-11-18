@@ -54,7 +54,9 @@ const game = new Game({ store, builder, speech, config, broadcast, log });
 const tiktok = new TikTok(config.tiktokName, game, log);
 tiktok.onStatus = (s) => broadcast({ type: 'tiktok', status: s });
 
+const VERSION = String(Date.now()); // aendert sich bei jedem Neustart -> Overlay laedt sich selbst neu
 wss.on('connection', (ws) => {
+  ws.send(JSON.stringify({ type: 'hello', version: VERSION }));
   ws.send(JSON.stringify({ type: 'state', state: game.state() }));
   ws.send(JSON.stringify({ type: 'tiktok', status: tiktok.status }));
   ws.send(JSON.stringify({ type: 'mc', connected: mc.connected }));

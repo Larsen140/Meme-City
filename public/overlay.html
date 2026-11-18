@@ -367,6 +367,7 @@ function connect() {
   ws.onclose = () => { $('status').textContent = 'Spielprogramm nicht verbunden …'; setTimeout(connect, 2000); };
   ws.onmessage = (e) => {
     const m = JSON.parse(e.data);
+    if (m.type === 'hello') { if (window.__v && window.__v !== m.version) location.reload(); window.__v = m.version; }
     if (m.type === 'state') { renderState(m.state); renderGifts(m.state); }
     else if (m.type === 'player') showPlayer(m.card);
     else if (m.type === 'banner') showBanner(m);
