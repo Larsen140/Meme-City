@@ -68,7 +68,7 @@ export class CityLife {
           const color = COLORS[car.id % COLORS.length];
           for (const [block, tr] of carParts(color, kind)) {
             await mc.send(`summon block_display ${p.x} ${BASE} ${p.z} {Tags:["mc_car","mc_car_${car.id}"],teleport_duration:${Math.round(TICK_MS / 50)},` +
-              `Rotation:[${p.yaw}f,0f],block_state:{Name:"${block}"},${tr}}`);
+              `Rotation:[${p.yaw}f,0f],block_state:"minecraft:${block}",${tr}}`);
           }
         }
       }
