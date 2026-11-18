@@ -82,7 +82,8 @@ export class Action {
     this.eventIndex = 0;
     // Stand des Like-Ziels ueber Neustarts retten (wenn juenger als 2 Stunden)
     const saved = game.store.data.likeGoal;
-    if (saved && Date.now() - saved.at < 2 * 3600_000) Object.assign(this, { sessionLikes: saved.sessionLikes, goalStart: saved.goalStart, goalTarget: saved.goalTarget, eventIndex: saved.eventIndex, goalEvent: EVENTS[saved.eventIndex % EVENTS.length] });
+    this.firstGoal = this.goalTarget;
+    if (saved && Date.now() - saved.at < 2 * 3600_000) Object.assign(this, { roomId: saved.roomId, sessionLikes: saved.sessionLikes, goalStart: saved.goalStart, goalTarget: saved.goalTarget, eventIndex: saved.eventIndex, goalEvent: EVENTS[saved.eventIndex % EVENTS.length] });
 
     // Duell
     this.duel = null;
@@ -104,6 +105,16 @@ export class Action {
 
     this.cooldown = new Map();
     setInterval(() => this.pushGoal(), 5000);
+  }
+
+  /** Neuer LIVE (anderer Raum): Like-Ziel wieder klein anfangen. Gleicher Raum nach Neustart: Stand behalten. */
+  newRoom(roomId) {
+    if (!roomId || roomId === this.roomId) return;
+    const first = this.roomId === undefined && this.sessionLikes === 0;
+    this.roomId = roomId;
+    if (!first) this.log(`[Like-Ziel] neuer LIVE – Ziel zurückgesetzt`);
+    Object.assign(this, { sessionLikes: 0, goalStart: 0, goalTarget: this.firstGoal, eventIndex: 0, goalEvent: EVENTS[0] });
+    this.pushGoal();
   }
 
   // ---------- Hilfen ----------
@@ -186,7 +197,7 @@ export class Action {
   // ---------- 1. Like-Ziele ----------
 
   pushGoal() {
-    this.game.store.data.likeGoal = { at: Date.now(), sessionLikes: this.sessionLikes, goalStart: this.goalStart, goalTarget: this.goalTarget, eventIndex: this.eventIndex };
+    this.game.store.data.likeGoal = { at: Date.now(), roomId: this.roomId, sessionLikes: this.sessionLikes, goalStart: this.goalStart, goalTarget: this.goalTarget, eventIndex: this.eventIndex };
     this.game.store.save();
     if (this.duel || this.raffle || this.vote) return;
     const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };

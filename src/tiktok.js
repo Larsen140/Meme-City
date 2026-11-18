@@ -124,6 +124,7 @@ export class TikTok {
       this.lastEvent = Date.now();
       this.connectedAt = Date.now();
       this.setStatus(`verbunden mit @${this.username} (Raum ${state?.roomId ?? '?'})`);
+      try { this.game.action?.newRoom(String(state?.roomId ?? '')); } catch (e) { this.log('[Like-Ziel] ' + e.message); }
     } catch (e) {
       const msg = String(e?.message || e);
       this.setStatus(/offline|not.*live|UserOffline|Room ID/i.test(msg) ? `@${this.username} ist gerade nicht LIVE` : 'Fehler: ' + msg.slice(0, 160));
