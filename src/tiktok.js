@@ -17,16 +17,49 @@ export class TikTok {
     this.status = 'getrennt';
     this.onStatus = () => {};
     this.retry = null;
+    this.connected = false;
+    this.connecting = false;
+    this.manualOff = false;
+    this.lastEvent = Date.now();
+    // Waechter: haelt die Verbindung am Leben, egal was passiert
+    setInterval(() => this.watchdog(), 15_000);
+  }
+
+  watchdog() {
+    if (this.manualOff || this.connecting) return;
+    if (!this.connected) {
+      if (!this.retryPending) this.connect();
+      return;
+    }
+    // Verbunden, aber seit Minuten kein einziges Ereignis -> Verbindung haengt vermutlich
+    if (Date.now() - this.lastEvent > 4 * 60_000) {
+      this.log('[TikTok] Seit 4 Minuten keine Ereignisse – verbinde neu');
+      this.connect();
+    }
+  }
+
+  scheduleRetry(ms) {
+    clearTimeout(this.retry);
+    this.retryPending = true;
+    this.retry = setTimeout(() => { this.retryPending = false; this.connect(); }, ms);
   }
 
   setStatus(s) { this.status = s; this.onStatus(s); this.log('[TikTok] ' + s); }
 
   async connect() {
-    clearTimeout(this.retry);
-    if (this.conn) { try { await this.conn.disconnect(); } catch {} }
+    if (this.connecting) return;
+    this.connecting = true;
+    this.manualOff = false;
+    clearTimeout(this.retry); this.retryPending = false;
+    this.connected = false;
+    const old = this.conn; this.conn = null;
+    if (old) { try { await old.disconnect(); } catch {} }
     const c = new TikTokLiveConnection(this.username, { processInitialData: false, enableExtendedGiftInfo: false });
     this.conn = c;
     this.setStatus('verbinde ...');
+    // jedes Ereignis zaehlt als Lebenszeichen
+    c.on(ControlEvent.DECODED_DATA ?? 'decodedData', () => { this.lastEvent = Date.now(); });
+    for (const ev of [WebcastEvent.CHAT, WebcastEvent.LIKE, WebcastEvent.MEMBER, WebcastEvent.GIFT, WebcastEvent.ROOM_USER, WebcastEvent.SOCIAL]) c.on(ev, () => { this.lastEvent = Date.now(); });
 
     c.on(WebcastEvent.CHAT, (d) => this.safe(() => this.game.onChat(userOf(d), String(d.comment ?? d.content ?? ''))));
     c.on(WebcastEvent.LIKE, (d) => this.safe(() => this.game.onLike(userOf(d), Number(d.likeCount ?? d.count ?? 1))));
@@ -45,25 +78,38 @@ export class TikTok {
         image: g.image?.urlList?.[0] ?? g.icon?.urlList?.[0] ?? '',
       });
     }));
-    c.on(WebcastEvent.STREAM_END, () => { this.setStatus('LIVE beendet'); });
-    c.on(ControlEvent.DISCONNECTED, () => {
+    c.on(WebcastEvent.STREAM_END, () => {
       if (this.conn !== c) return;
-      this.setStatus('getrennt – neuer Versuch in 30 s');
-      this.retry = setTimeout(() => this.connect(), 30_000);
+      this.connected = false;
+      this.setStatus('LIVE beendet – warte auf neuen LIVE');
+      this.scheduleRetry(30_000);
     });
+    c.on(ControlEvent.DISCONNECTED, () => {
+      if (this.conn !== c || this.manualOff) return;
+      this.connected = false;
+      this.setStatus('getrennt – verbinde in 10 s neu');
+      this.scheduleRetry(10_000);
+    });
+    c.on(ControlEvent.ERROR, (e) => this.log('[TikTok] Fehler: ' + String(e?.message || e).slice(0, 160)));
 
     try {
       const state = await c.connect();
+      this.connected = true;
+      this.lastEvent = Date.now();
       this.setStatus(`verbunden mit @${this.username} (Raum ${state?.roomId ?? '?'})`);
     } catch (e) {
       const msg = String(e?.message || e);
       this.setStatus(/offline|not.*live|UserOffline|Room ID/i.test(msg) ? `@${this.username} ist gerade nicht LIVE` : 'Fehler: ' + msg.slice(0, 160));
-      if (this.conn === c) this.retry = setTimeout(() => this.connect(), 60_000);
+      if (this.conn === c) this.scheduleRetry(20_000);
+    } finally {
+      this.connecting = false;
     }
   }
 
   async disconnect() {
-    clearTimeout(this.retry);
+    this.manualOff = true;
+    this.connected = false;
+    clearTimeout(this.retry); this.retryPending = false;
     const c = this.conn; this.conn = null;
     if (c) { try { await c.disconnect(); } catch {} }
     this.setStatus('getrennt');

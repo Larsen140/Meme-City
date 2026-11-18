@@ -137,3 +137,6 @@ server.listen(config.webPort || 3000, async () => {
 });
 
 process.on('SIGINT', () => { store.saveNow(); process.exit(0); });
+// Einzelne Fehler sollen nie das ganze Programm beenden
+process.on('uncaughtException', (e) => log('[Fehler] ' + (e?.stack || e)));
+process.on('unhandledRejection', (e) => log('[Fehler] ' + (e?.stack || e)));
