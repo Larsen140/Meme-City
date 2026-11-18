@@ -21,6 +21,9 @@ for (const c of cells) {
   await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
 }
 await mc.send('kill @e[type=text_display,tag=!mc_title]');
+await mc.send('kill @e[type=item]');
 if (fs.existsSync(save)) fs.renameSync(save, new URL('../data/save-backup-' + Date.now() + '.json', import.meta.url));
+// Bewohner bleiben in der Welt, also nicht noch einmal erschaffen
+fs.writeFileSync(save, JSON.stringify({ players: {}, nextPlot: 0, community: { index: 0, progress: 0 }, totals: { coins: 0, likes: 0 }, peopleSpawned: !!s.peopleSpawned }));
 console.log(`Fertig: ${cells.length} Flächen geleert, Speicherstand zurückgesetzt.`);
 process.exit(0);
