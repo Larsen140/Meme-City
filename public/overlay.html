@@ -184,6 +184,26 @@
   #ticker { height: 82px; } #ticker .lab { font-size: 34px; } #ticker .run { font-size: 42px; }
   #mayorName { font-size: 24px; }
   #almost { font-size: 38px; text-shadow: none; }
+
+  /* ---------- Schoener Look ---------- */
+  .panel { background: linear-gradient(180deg, rgba(48, 34, 110, 0.95) 0%, rgba(14, 11, 34, 0.94) 100%);
+    box-shadow: 0 12px 30px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.18); overflow: hidden; }
+  .panel::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 5px;
+    background: linear-gradient(90deg, var(--pink), var(--gold), var(--mint), var(--sky)); }
+  #board, #right > .panel, #head { position: relative; }
+  #board { position: absolute; } #head { position: absolute; }
+  #bubble::before { display: none; }
+  #bubble { background: #fff; overflow: visible; }
+  #bubble::after { content: ''; position: absolute; left: -18px; bottom: 26px; border: 12px solid transparent; border-right: 18px solid #fff; border-left: none; }
+  #banner.big { background: linear-gradient(135deg, rgba(255,61,127,.96), rgba(255,140,40,.96)); }
+  .ptitle { letter-spacing: 1px; white-space: nowrap; }
+  #comm .ptitle { font-size: 23px; }
+  #comm .cname { font-size: 34px; font-weight: 800; color: #fff; line-height: 1.1; margin: 2px 0 6px; }
+  .bar { position: relative; box-shadow: inset 0 2px 4px rgba(0,0,0,.5); }
+  .bar i { box-shadow: 0 0 14px rgba(61,245,176,.6);
+    background-image: linear-gradient(90deg, var(--mint), var(--sky)), repeating-linear-gradient(45deg, rgba(255,255,255,.18) 0 12px, transparent 12px 24px);
+    background-blend-mode: overlay; }
+  #logo { filter: drop-shadow(0 0 12px rgba(255,61,127,.45)); }
 </style>
 </head>
 <body>
@@ -249,7 +269,7 @@ function renderState(s) {
     ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">Platz 1 der Stadt</div></div>`
     : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Wer wird es?</div></div>`;
   $('comm').innerHTML = s.community
-    ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU: ${esc(s.community.name.toUpperCase())}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
+    ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU</div><div class="cname">${esc(s.community.name)}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
     : `<div class="ptitle">🏗️ ALLE GEMEINSCHAFTSBAUTEN FERTIG!</div>`;
 }
 
