@@ -86,10 +86,12 @@ export class TikTok {
       const run = () => this.game.onChat(userOf(d), String(d.comment ?? d.content ?? ''));
       if (this.game.duringChat) this.game.duringChat(run); else run();
     }));
-    c.on(WebcastEvent.LIKE, (d) => this.safe(() => this.game.onLike(userOf(d), Number(d.likeCount ?? d.count ?? 1))));
-    c.on(WebcastEvent.MEMBER, (d) => this.safe(() => this.game.onJoin(userOf(d))));
-    c.on(WebcastEvent.SHARE, (d) => this.safe(() => this.game.onShare(userOf(d))));
-    c.on(WebcastEvent.FOLLOW, (d) => this.safe(() => this.game.onFollow(userOf(d))));
+    // Reaktionen auf Zuschauer (Likes, Beitreten, Teilen, Folgen) duerfen laut gesprochen werden – Geschenke nicht
+    const react = (fn) => (this.game.duringChat ? this.game.duringChat(fn) : fn());
+    c.on(WebcastEvent.LIKE, (d) => this.safe(() => react(() => this.game.onLike(userOf(d), Number(d.likeCount ?? d.count ?? 1)))));
+    c.on(WebcastEvent.MEMBER, (d) => this.safe(() => react(() => this.game.onJoin(userOf(d)))));
+    c.on(WebcastEvent.SHARE, (d) => this.safe(() => react(() => this.game.onShare(userOf(d)))));
+    c.on(WebcastEvent.FOLLOW, (d) => this.safe(() => react(() => this.game.onFollow(userOf(d)))));
     c.on(WebcastEvent.GIFT, (d) => this.safe(() => {
       const g = d.gift || d.giftDetails || {};
       const type = g.type ?? d.giftType;
