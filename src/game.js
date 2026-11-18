@@ -36,7 +36,7 @@ export class Game {
     speech.onStart = (text) => this.broadcast({ type: 'speak', text, on: true });
     speech.onEnd = () => this.broadcast({ type: 'speak', on: false });
 
-    setInterval(() => this.idle(), 25_000); // Buergermeister redet regelmaessig mit den Zuschauern
+    setInterval(() => this.idle(), 10_000); // Buergermeister redet regelmaessig mit den Zuschauern
 
     this.sessionLikes = new Map(); // Likes je Zuschauer in diesem Stream
     this.likeLog = [];             // fuer "Likes pro Minute"
