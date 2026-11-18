@@ -163,6 +163,7 @@ app.post('/api/showcase', (req, res) => {
   } });
 });
 // Event von Hand ausloesen (Testpanel): Tornado, Meteorregen, Feuerwerk-Show, Regenbogen, Schneesturm, Party
+app.post('/api/bonus/:name', (req, res) => res.json({ ok: game.buildBonus(req.params.name) }));
 app.post('/api/event/:name', (req, res) => { builder.enqueue({ type: 'fn', fn: () => game.action.runEvent(req.params.name) }); res.json({ ok: true }); });
 app.post('/api/css', (req, res) => { broadcast({ type: 'css', css: String(req.body.css || '') }); res.json({ ok: true }); });
 app.post('/api/hidesel', (req, res) => { broadcast({ type: 'hidesel', sel: String(req.body.sel || '') }); res.json({ ok: true }); });

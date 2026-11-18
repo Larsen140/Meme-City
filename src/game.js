@@ -199,6 +199,27 @@ export class Game {
   }
 
   /** Grundstuecke, die fuer grosse Gemeinschaftsbauten reserviert sind. */
+  /** Bonus-Bau (z. B. Burger-Bude) sofort auf 4 freien Grundstuecken bauen und 10 s zeigen. */
+  buildBonus(name) {
+    const d = this.store.data, key = 'bonus:' + name;
+    d.bigSites ||= {};
+    if (!d.bigSites[key]) {
+      const site = findBigSite(d.nextPlot, this.reservedPlots());
+      if (!site) return false;
+      d.bigSites[key] = site;
+      this.store.save();
+    }
+    const site = { ...d.bigSites[key], big: true };
+    this.log(`[Bonus-Bau] ${name}: Grundstücke ${site.plots.map((n) => n + 1).join(', ')}`);
+    this.builder.enqueue({ type: 'fn', fn: async () => {
+      this.broadcast({ type: 'banner', title: `🍔 NEU: ${name.toUpperCase()}!`, text: 'Meme City bekommt einen Burgerladen', big: true });
+      this.speech.say(`Achtung, Meme City bekommt eine ${name}! Wer hat Bock auf Burger?`, true);
+      await this.builder.buildCommunity('bonus', name, false, site);
+      await new Promise((r) => setTimeout(r, 10_000)); // 10 Sekunden in der Kamera zeigen
+    } });
+    return true;
+  }
+
   reservedPlots() {
     return new Set(Object.values(this.store.data.bigSites || {}).flatMap((s) => s.plots));
   }

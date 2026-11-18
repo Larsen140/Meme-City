@@ -44,7 +44,7 @@ export const FLAGS = {
   piraten: ['Piraten', { bg: 'black', dot: 'white' }], pirat: ['Piraten', { bg: 'black', dot: 'white' }],
 };
 
-const W = 1.8, H = 1.1, Y0 = 3.0, T = 0.05; // Fahne: Breite, Hoehe, Unterkante, Dicke
+const W = 1.8, H = 1.1, Y0 = 3.6, T = 0.05; // Fahne: Breite, Hoehe, Unterkante, Dicke
 
 /** Rechtecke [farbe, u0, v0, u1, v1, dicke] auf der Fahne (u = vom Mast weg, v = von unten) */
 function rects(def) {
@@ -66,11 +66,11 @@ function rects(def) {
   return r;
 }
 
-/** Mast in der hinteren Ecke (gegenueber vom Auto), Fahne zeigt quer zur Strasse. */
+/** Mast in der vorderen Ecke des Vorgartens (zur Kamera hin), Fahne zeigt quer zur Strasse. */
 export function flagSpot(p) {
   const { x: cx, z: cz } = plotCenter(p.plot);
   const f = frontOf(cx, cz);
-  const back = -(f.dx || f.dz) * 6 + 0.5; // Block 6 hinten, Mitte des Blocks
+  const back = (f.dx || f.dz) * 6 + 0.5; // Block 6 vorne (zwischen Hauswand und Hecke), Mitte des Blocks
   const side = -6 + 0.5;                  // linke Ecke
   return f.dx ? { x: cx + back, z: cz + side, lateral: 'z' } : { x: cx + side, z: cz + back, lateral: 'x' };
 }
