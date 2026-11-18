@@ -24,7 +24,7 @@ export class TikTok {
   async connect() {
     clearTimeout(this.retry);
     if (this.conn) { try { await this.conn.disconnect(); } catch {} }
-    const c = new TikTokLiveConnection(this.username, { processInitialData: false, enableExtendedGiftInfo: true });
+    const c = new TikTokLiveConnection(this.username, { processInitialData: false, enableExtendedGiftInfo: false });
     this.conn = c;
     this.setStatus('verbinde ...');
 
