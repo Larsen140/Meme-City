@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Meme City Profilbild</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@800&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: #14122b; }
+  body { display: flex; align-items: center; justify-content: center; height: 100vh; }
+  canvas { width: min(100vw, 100vh); height: min(100vw, 100vh); }
+</style>
+</head>
+<body>
+<canvas id="c" width="1080" height="1080"></canvas>
+<script>
+const c = document.getElementById('c'), x = c.getContext('2d');
+const skin = new Image();
+skin.onload = async () => {
+  await document.fonts.load('800 100px "Baloo 2"');
+  // Hintergrund: Abendhimmel mit Strahlen
+  const g = x.createRadialGradient(540, 470, 60, 540, 540, 760);
+  g.addColorStop(0, '#ff8a3d'); g.addColorStop(0.45, '#ff3d7f'); g.addColorStop(1, '#2a1660');
+  x.fillStyle = g; x.fillRect(0, 0, 1080, 1080);
+  x.save(); x.translate(540, 470); x.globalAlpha = 0.12; x.fillStyle = '#fff';
+  for (let i = 0; i < 16; i++) { x.rotate(Math.PI / 8); x.beginPath(); x.moveTo(0, 0); x.lineTo(900, -90); x.lineTo(900, 90); x.fill(); }
+  x.restore();
+  // Skyline aus Pixel-Haeusern
+  x.fillStyle = '#1b1240';
+  const h = [180, 260, 210, 340, 240, 420, 300, 230, 380, 260, 200, 320, 220];
+  h.forEach((v, i) => x.fillRect(i * 84, 1080 - v - 40, 84, v + 40));
+  x.fillStyle = '#ffc93c';
+  h.forEach((v, i) => { for (let wy = 1080 - v; wy < 1000; wy += 44) for (let wx = 14; wx < 74; wx += 30) if ((i * 7 + wy + wx) % 3) x.fillRect(i * 84 + wx, wy, 14, 18); });
+  // Kopf aus dem Minecraft-Skin (Gesicht + Hut-Ebene)
+  x.imageSmoothingEnabled = false;
+  const s = 48, hx = 540 - 4 * s, hy = 150;
+  x.fillStyle = 'rgba(0,0,0,.35)'; x.fillRect(hx + 16, hy + 20, 8 * s, 8 * s);
+  x.drawImage(skin, 8, 8, 8, 8, hx, hy, 8 * s, 8 * s);
+  x.drawImage(skin, 40, 8, 8, 8, hx - 0.5 * s, hy - 0.5 * s, 9 * s, 9 * s);
+  // Schriftzug
+  x.textAlign = 'center'; x.font = '800 190px "Baloo 2"';
+  x.lineWidth = 26; x.strokeStyle = '#1b1240'; x.lineJoin = 'round';
+  x.strokeText('MEME', 540, 760); x.strokeText('CITY', 540, 920);
+  const tg = x.createLinearGradient(0, 600, 0, 920); tg.addColorStop(0, '#ffe066'); tg.addColorStop(1, '#ffb020');
+  x.fillStyle = tg; x.fillText('MEME', 540, 760); x.fillText('CITY', 540, 920);
+  document.title = 'fertig';
+};
+skin.src = '/skin.png';
+</script>
+</body>
+</html>
