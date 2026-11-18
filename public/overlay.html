@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Meme City Overlay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --panel: rgba(18, 16, 40, 0.82);
+    --line: rgba(255, 255, 255, 0.14);
+    --pink: #ff3d7f;
+    --gold: #ffc93c;
+    --mint: #3df5b0;
+    --sky: #4cc9ff;
+    --text: #ffffff;
+    --muted: #b9b4e0;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: transparent; }
+  body { font-family: 'Baloo 2', system-ui, sans-serif; color: var(--text); position: relative; }
+  body.preview { background: linear-gradient(#6aa7ff, #9fd7ff 40%, #7bc66b 40.2%, #5aa04c); }
+  .panel { background: var(--panel); border: 2px solid var(--line); border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,.35); backdrop-filter: blur(6px); }
+
+  /* ---------- Kopf ---------- */
+  #head { position: absolute; top: 36px; left: 36px; right: 36px; display: flex; align-items: center; gap: 18px; padding: 14px 26px; }
+  #logo { font-size: 66px; font-weight: 800; letter-spacing: 1px; line-height: 1; background: linear-gradient(90deg, var(--gold), var(--pink)); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: none; }
+  #logo small { display: block; font-size: 22px; letter-spacing: 6px; color: var(--muted); -webkit-text-fill-color: var(--muted); }
+  .chips { margin-left: auto; display: flex; gap: 12px; }
+  .chip { padding: 8px 18px; border-radius: 18px; background: rgba(255,255,255,.08); text-align: center; min-width: 140px; }
+  .chip b { display: block; font-size: 40px; line-height: 1; }
+  .chip span { font-size: 18px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
+
+  /* ---------- Bestenliste ---------- */
+  #board { position: absolute; top: 200px; left: 36px; width: 430px; padding: 18px 20px; }
+  .ptitle { font-size: 24px; font-weight: 800; letter-spacing: 3px; color: var(--gold); margin-bottom: 8px; }
+  .row { display: flex; align-items: center; gap: 10px; padding: 5px 4px; font-size: 24px; border-radius: 12px; }
+  .row .pos { width: 34px; text-align: center; font-weight: 800; color: var(--muted); }
+  .row:nth-child(2) .pos { color: var(--gold); } .row:nth-child(3) .pos { color: #e3e3e3; } .row:nth-child(4) .pos { color: #e09a5a; }
+  .row img, .row .ava { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; background: #3b3570; flex: none; }
+  .row .nm { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 700; }
+  .row .lv { font-size: 20px; color: var(--mint); white-space: nowrap; }
+
+  /* ---------- Rechts: Ehrenbuergermeister + Gemeinschaftsbau ---------- */
+  #right { position: absolute; top: 200px; right: 36px; width: 520px; display: flex; flex-direction: column; gap: 16px; }
+  #honor { padding: 16px 20px; display: flex; align-items: center; gap: 14px; }
+  #honor img, #honor .ava { width: 74px; height: 74px; border-radius: 50%; border: 4px solid var(--gold); object-fit: cover; background: #3b3570; }
+  #honor .lbl { font-size: 19px; color: var(--gold); letter-spacing: 2px; font-weight: 800; }
+  #honor .nm { font-size: 30px; font-weight: 800; line-height: 1.1; }
+  #honor .sub { font-size: 20px; color: var(--muted); }
+  #comm { padding: 16px 20px; }
+  .bar { height: 26px; background: rgba(255,255,255,.1); border-radius: 13px; overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; width: 0; border-radius: 13px; background: linear-gradient(90deg, var(--mint), var(--sky)); transition: width .8s ease; }
+  #comm .nums { display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; }
+
+  /* ---------- Banner ---------- */
+  #banner { position: absolute; top: 640px; left: 50%; transform: translate(-50%, -40px) scale(.8); opacity: 0; transition: all .45s cubic-bezier(.2,1.4,.4,1); padding: 22px 40px; display: flex; align-items: center; gap: 22px; min-width: 640px; border-color: var(--gold); }
+  #banner.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  #banner.big { background: linear-gradient(135deg, rgba(255,61,127,.92), rgba(255,140,40,.92)); }
+  #banner img { width: 96px; height: 96px; border-radius: 50%; border: 4px solid #fff; object-fit: cover; }
+  #banner .t { font-size: 46px; font-weight: 800; line-height: 1.05; }
+  #banner .s { font-size: 30px; color: #fff4c9; }
+
+  #almost { position: absolute; top: 880px; left: 50%; transform: translateX(-50%); padding: 12px 30px; font-size: 34px; font-weight: 800; color: #1b1240; background: var(--gold); border-radius: 22px; opacity: 0; transition: opacity .4s; animation: pulse 1s infinite; white-space: nowrap; }
+  #almost.show { opacity: 1; }
+  @keyframes pulse { 50% { transform: translateX(-50%) scale(1.06); } }
+
+  /* ---------- Spieler-Karte ---------- */
+  #player { position: absolute; left: 36px; right: 36px; top: 1180px; padding: 20px 24px; display: flex; gap: 20px; align-items: center; opacity: 0; transform: translateY(30px); transition: all .4s ease; }
+  #player.show { opacity: 1; transform: none; }
+  #player img, #player .ava { width: 120px; height: 120px; border-radius: 26px; object-fit: cover; border: 4px solid var(--pink); background: #3b3570; flex: none; }
+  #player .info { flex: 1; min-width: 0; }
+  #player .nm { font-size: 40px; font-weight: 800; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #player .lvl { font-size: 28px; color: var(--mint); font-weight: 700; }
+  #player .need { font-size: 22px; color: var(--muted); margin-top: 4px; }
+  #player .rank { text-align: center; font-size: 20px; color: var(--muted); }
+  #player .rank b { display: block; font-size: 44px; color: var(--gold); line-height: 1; }
+
+  /* ---------- Buergermeister ---------- */
+  #mayor { position: absolute; left: 36px; bottom: 140px; width: 1008px; height: 330px; display: flex; align-items: flex-end; gap: 0; }
+  #mayorPic { width: 300px; height: 330px; position: relative; flex: none; }
+  #mayorPic .frame { position: absolute; inset: 20px 10px 0 10px; border-radius: 34px; background: radial-gradient(circle at 50% 40%, #3a2f86, #1a1440); border: 4px solid var(--line); transition: box-shadow .2s, border-color .2s; }
+  #mayor.talking .frame { border-color: var(--gold); box-shadow: 0 0 40px rgba(255,201,60,.65); }
+  #mayorPic canvas { position: absolute; left: 0; bottom: 0; width: 300px; height: 330px; image-rendering: pixelated; border-radius: 0 0 34px 34px; }
+  #mayorName { position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%); background: var(--pink); padding: 2px 16px; border-radius: 14px; font-size: 20px; font-weight: 800; white-space: nowrap; }
+  #bubble { margin: 0 0 90px 10px; padding: 18px 26px; font-size: 32px; font-weight: 700; line-height: 1.2; max-width: 680px; opacity: 0; transform: scale(.9); transform-origin: left bottom; transition: all .25s; position: relative; background: #fff; color: #1b1240; border: none; }
+  #bubble::before { content: ''; position: absolute; left: -18px; bottom: 26px; border: 12px solid transparent; border-right: 18px solid #fff; border-left: none; }
+  #mayor.talking #bubble { opacity: 1; transform: none; }
+  @keyframes hop { 50% { transform: translateY(-18px); } }
+
+  /* ---------- Laufband ---------- */
+  #ticker { position: absolute; left: 0; right: 0; bottom: 50px; height: 70px; background: rgba(18,16,40,.9); border-top: 3px solid var(--pink); border-bottom: 3px solid var(--pink); overflow: hidden; }
+  #ticker .lab { position: absolute; left: 0; top: 0; bottom: 0; z-index: 2; background: var(--pink); padding: 0 24px; font-size: 30px; font-weight: 800; display: flex; align-items: center; }
+  #ticker .run { position: absolute; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; font-size: 34px; font-weight: 700; left: 1080px; }
+  #ticker .run.hl { color: var(--gold); }
+
+  /* ---------- Likes + Konfetti ---------- */
+  .like { position: absolute; right: 60px; bottom: 600px; width: 66px; height: 66px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 34px; animation: rise 2.6s ease-out forwards; }
+  .like img { width: 100%; height: 100%; border-radius: 50%; border: 3px solid var(--pink); object-fit: cover; }
+  .like::after { content: '♥'; position: absolute; right: -8px; bottom: -8px; color: var(--pink); font-size: 30px; text-shadow: 0 0 4px #000; }
+  @keyframes rise { 0% { transform: translate(0,0) scale(.4); opacity: 0; } 15% { opacity: 1; transform: translate(0,-60px) scale(1); } 100% { transform: translate(var(--dx), -560px) scale(.8); opacity: 0; } }
+  #confetti { position: absolute; inset: 0; pointer-events: none; }
+  #status { position: absolute; top: 4px; right: 40px; font-size: 16px; color: var(--muted); }
+</style>
+</head>
+<body>
+<canvas id="confetti" width="1080" height="1920"></canvas>
+<div id="status"></div>
+
+<div id="head" class="panel">
+  <div id="logo"><span id="cityName">MEME CITY</span><small>DEINE STADT · LIVE</small></div>
+  <div class="chips">
+    <div class="chip"><b id="houses">0</b><span>Häuser</span></div>
+    <div class="chip"><b id="citizens">0</b><span>Bürger</span></div>
+  </div>
+</div>
+
+<div id="board" class="panel">
+  <div class="ptitle">🏆 TOP 10</div>
+  <div id="rows"></div>
+</div>
+
+<div id="right">
+  <div id="honor" class="panel"></div>
+  <div id="comm" class="panel"></div>
+</div>
+
+<div id="banner" class="panel"></div>
+<div id="almost"></div>
+
+<div id="player" class="panel"></div>
+
+<div id="mayor">
+  <div id="mayorPic">
+    <div class="frame"></div>
+    <canvas id="mayorCanvas" width="300" height="330"></canvas>
+    <div id="mayorName">Bürgermeister Memo</div>
+  </div>
+  <div id="bubble" class="panel"></div>
+</div>
+
+<div id="ticker"><div class="lab">LIVE</div><div class="run" id="run">Willkommen in Meme City! Schreib „Haus“ in den Chat!</div></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const fmt = (n) => Math.round(n).toLocaleString('de-DE');
+const ava = (src, cls = 'ava') => src ? `<img src="${esc(src)}" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'${cls}'}))">` : `<div class="${cls}"></div>`;
+if (location.search.includes('preview')) document.body.classList.add('preview');
+
+// ---------- Zustand ----------
+function renderState(s) {
+  $('cityName').textContent = (s.city || 'Meme City').toUpperCase();
+  $('mayorName').textContent = s.mayorName;
+  $('houses').textContent = fmt(s.houses);
+  $('citizens').textContent = fmt(s.citizens);
+  $('rows').innerHTML = s.top.length ? s.top.map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
+    : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>';
+  $('honor').innerHTML = s.honorary
+    ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">${fmt(s.honorary.coins)} Coins gespendet</div></div>`
+    : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Größter Unterstützer bekommt den Titel</div></div>`;
+  $('comm').innerHTML = s.community
+    ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU: ${esc(s.community.name.toUpperCase())}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
+    : `<div class="ptitle">🏗️ ALLE GEMEINSCHAFTSBAUTEN FERTIG!</div>`;
+}
+
+// ---------- Spieler-Karte ----------
+let playerTimer;
+function showPlayer(c) {
+  const need = c.nextLevel
+    ? `Noch <b>${fmt(c.likesNeeded)} Likes</b> oder <b>${fmt(c.coinsNeeded)} Coins</b> bis Stufe ${c.nextLevel} · ${esc(c.nextName)}`
+    : 'Höchste Stufe erreicht! 👑';
+  $('player').innerHTML = `${ava(c.avatar)}<div class="info"><div class="nm">@${esc(c.name)}</div>
+    <div class="lvl">${c.hasHouse ? `Stufe ${c.level} · ${esc(c.levelName)}` : 'Noch kein Haus – schreib „Haus“!'}</div>
+    <div class="bar"><i style="width:${Math.round(c.progress * 100)}%"></i></div><div class="need">${need}</div></div>
+    ${c.hasHouse ? `<div class="rank">Platz<b>#${c.rank}</b>von ${fmt(c.houses)}</div>` : ''}`;
+  $('player').classList.add('show');
+  clearTimeout(playerTimer);
+  playerTimer = setTimeout(() => $('player').classList.remove('show'), 9000);
+}
+
+// ---------- Banner ----------
+let bannerTimer;
+function showBanner(b) {
+  const el = $('banner');
+  el.className = 'panel' + (b.big ? ' big' : '');
+  el.innerHTML = `${b.avatar ? ava(b.avatar) : ''}<div><div class="t">${esc(b.title)}</div><div class="s">${esc(b.text)}</div></div>${b.gift ? `<img src="${esc(b.gift)}" style="border:none;border-radius:0">` : ''}`;
+  requestAnimationFrame(() => el.classList.add('show'));
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => el.classList.remove('show'), b.big ? 6000 : 3800);
+  mayorPose(b.big ? 'cheer' : 'point', 2500);
+}
+
+let almostTimer;
+function showAlmost(c) {
+  $('almost').textContent = `FAST GESCHAFFT! @${c.name} steht kurz vor Stufe ${c.nextLevel}`;
+  $('almost').classList.add('show');
+  clearTimeout(almostTimer);
+  almostTimer = setTimeout(() => $('almost').classList.remove('show'), 6000);
+}
+
+// ---------- Laufband ----------
+const tickerQueue = [];
+let tickerBusy = false;
+function ticker(text, hl) {
+  tickerQueue.push({ text, hl });
+  if (tickerQueue.length > 6) tickerQueue.shift();
+  if (!tickerBusy) nextTicker();
+}
+function nextTicker() {
+  const item = tickerQueue.shift() || { text: 'Willkommen in Meme City! Schreib „Haus“ in den Chat und bau mit!' };
+  tickerBusy = true;
+  const run = $('run');
+  run.textContent = item.text;
+  run.className = 'run' + (item.hl ? ' hl' : '');
+  const w = run.scrollWidth, dist = 1080 + w, speed = 220;
+  run.animate([{ left: '1080px' }, { left: `${-w}px` }], { duration: dist / speed * 1000, easing: 'linear' }).onfinish = () => { tickerBusy = false; nextTicker(); };
+}
+nextTicker();
+
+// ---------- Buergermeister ----------
+let mouthTimer, poseTimer;
+function talk(on, text) {
+  const m = $('mayor');
+  clearInterval(mouthTimer);
+  if (on) {
+    $('bubble').textContent = text;
+    m.classList.add('talking');
+    mouthTimer = setInterval(() => m.classList.toggle('open', Math.random() > 0.35), 110);
+    if (!m.classList.contains('cheer')) mayorPose(Math.random() > 0.5 ? 'point' : '', 1800);
+  } else {
+    m.classList.remove('talking', 'open');
+  }
+}
+function mayorPose(pose, ms) {
+  const m = $('mayor');
+  m.classList.remove('point', 'cheer');
+  if (pose) m.classList.add(pose);
+  clearTimeout(poseTimer);
+  poseTimer = setTimeout(() => m.classList.remove('point', 'cheer'), ms);
+}
+
+// ---------- Buergermeister aus dem Minecraft-Skin zeichnen ----------
+const mcv = $('mayorCanvas'), mctx = mcv.getContext('2d');
+const skin = new Image();
+let slim = false, armL = 0, armR = 0, hop = 0, hopT = 0, blink = 0;
+skin.onload = () => {
+  try { // schmale Arme (Alex-Modell) erkennen
+    const t = document.createElement('canvas'); t.width = 64; t.height = 64;
+    const c = t.getContext('2d'); c.drawImage(skin, 0, 0);
+    slim = c.getImageData(54, 20, 1, 1).data[3] === 0;
+  } catch {}
+  requestAnimationFrame(drawMayor);
+};
+skin.src = '/skin.png';
+
+function part(sx, sy, sw, sh, dx, dy, s) {
+  mctx.drawImage(skin, sx, sy, sw, sh, dx, dy, sw * s, sh * s);
+}
+function drawMayor(t) {
+  const m = $('mayor');
+  const s = 13, aw = slim ? 3 : 4;
+  const talking = m.classList.contains('talking');
+  const cheer = m.classList.contains('cheer'), point = m.classList.contains('point');
+  // Ziel-Winkel der Arme (Bogenmass), weich angleichen
+  const targetR = cheer ? -2.6 : point ? -1.9 : talking ? -0.25 + Math.sin(t / 260) * 0.15 : 0;
+  const targetL = cheer ? 2.6 : talking ? 0.12 + Math.sin(t / 310) * 0.08 : 0;
+  armR += (targetR - armR) * 0.18; armL += (targetL - armL) * 0.18;
+  hop = cheer ? Math.abs(Math.sin(t / 140)) * 16 : hop * 0.8;
+  const breathe = Math.sin(t / 600) * 2;
+
+  mctx.clearRect(0, 0, 300, 330);
+  mctx.imageSmoothingEnabled = false;
+  const bx = 150 - 4 * s, hy = 44 - hop + breathe, by = hy + 8 * s;
+
+  // Beine
+  part(4, 20, 4, 12, bx, by + 12 * s, s); part(20, 52, 4, 12, bx + 4 * s, by + 12 * s, s);
+  part(4, 36, 4, 12, bx, by + 12 * s, s); part(4, 52, 4, 12, bx + 4 * s, by + 12 * s, s);
+  // Koerper
+  part(20, 20, 8, 12, bx, by, s); part(20, 36, 8, 12, bx, by, s);
+  // Arme (gedreht an der Schulter)
+  const arm = (sx, sy, ox, oy, x, angle) => {
+    mctx.save();
+    mctx.translate(x + (aw * s) / 2, by + s * 1.5);
+    mctx.rotate(angle);
+    part(sx, sy, aw, 12, -(aw * s) / 2, -s * 1.5, s);
+    part(ox, oy, aw, 12, -(aw * s) / 2, -s * 1.5, s);
+    mctx.restore();
+  };
+  arm(44, 20, 44, 36, bx - aw * s, armL);       // rechter Arm der Figur (links im Bild)
+  arm(36, 52, 52, 52, bx + 8 * s, armR);        // linker Arm der Figur (rechts im Bild, zeigt/jubelt)
+  // Kopf + Hut-Ebene
+  const tilt = talking ? Math.sin(t / 180) * 0.04 : 0;
+  mctx.save();
+  mctx.translate(150, hy + 8 * s);
+  mctx.rotate(tilt);
+  mctx.translate(-150, -(hy + 8 * s));
+  part(8, 8, 8, 8, bx, hy, s);
+  // Mund: dunkles Rechteck unten im Gesicht, solange er spricht
+  if (m.classList.contains('open')) {
+    const h = 0.8 + Math.random() * 0.7;
+    mctx.fillStyle = '#2a0f12';
+    mctx.fillRect(bx + 3 * s, hy + 6 * s, 2 * s, h * s);
+    mctx.fillStyle = '#c23a4a';
+    mctx.fillRect(bx + 3.3 * s, hy + (6 + h * 0.55) * s, 1.4 * s, h * 0.4 * s);
+  }
+  part(40, 8, 8, 8, bx - 0.5 * s, hy - 0.5 * s, s * 1.125);
+  mctx.restore();
+  requestAnimationFrame(drawMayor);
+}
+
+// ---------- Likes ----------
+let likeCount = 0;
+function likeBubble(l) {
+  if (++likeCount % 2 && document.querySelectorAll('.like').length > 14) return;
+  const d = document.createElement('div');
+  d.className = 'like';
+  d.style.setProperty('--dx', `${Math.round((Math.random() - 0.7) * 160)}px`);
+  d.style.right = `${40 + Math.random() * 60}px`;
+  d.innerHTML = l.avatar ? `<img src="${esc(l.avatar)}" referrerpolicy="no-referrer">` : '';
+  if (!l.avatar) d.style.background = 'var(--pink)';
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 2700);
+}
+
+// ---------- Konfetti ----------
+const cv = $('confetti'), cx = cv.getContext('2d');
+let parts = [];
+function confetti(n) {
+  const cols = ['#ff3d7f', '#ffc93c', '#3df5b0', '#4cc9ff', '#ffffff', '#b06bff'];
+  for (let i = 0; i < n; i++) parts.push({ x: 150 + Math.random() * 200, y: 1500, vx: (Math.random() - 0.2) * 14, vy: -14 - Math.random() * 16, r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4, c: cols[i % cols.length], s: 8 + Math.random() * 10 });
+  if (parts.length === n) requestAnimationFrame(tick);
+}
+function tick() {
+  cx.clearRect(0, 0, 1080, 1920);
+  parts = parts.filter((p) => p.y < 1950);
+  for (const p of parts) {
+    p.vy += 0.45; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+    cx.save(); cx.translate(p.x, p.y); cx.rotate(p.r); cx.fillStyle = p.c; cx.fillRect(-p.s / 2, -p.s / 4, p.s, p.s / 2); cx.restore();
+  }
+  if (parts.length) requestAnimationFrame(tick);
+}
+
+// ---------- Verbindung zum Spielprogramm ----------
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}`);
+  ws.onopen = () => { $('status').textContent = ''; };
+  ws.onclose = () => { $('status').textContent = 'Spielprogramm nicht verbunden …'; setTimeout(connect, 2000); };
+  ws.onmessage = (e) => {
+    const m = JSON.parse(e.data);
+    if (m.type === 'state') renderState(m.state);
+    else if (m.type === 'player') showPlayer(m.card);
+    else if (m.type === 'banner') showBanner(m);
+    else if (m.type === 'almost') showAlmost(m.card);
+    else if (m.type === 'ticker') ticker(m.text, m.highlight);
+    else if (m.type === 'speak') talk(m.on, m.text);
+    else if (m.type === 'likes') likeBubble(m);
+    else if (m.type === 'confetti') confetti(m.amount);
+  };
+}
+connect();
+</script>
+</body>
+</html>

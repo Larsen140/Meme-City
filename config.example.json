@@ -1,0 +1,22 @@
+{
+  "tiktokName": "memecitymc",
+  "minecraftName": "Larscraft17",
+  "rcon": {
+    "host": "127.0.0.1",
+    "port": 25575,
+    "password": "HIER_RCON_PASSWORT"
+  },
+  "webPort": 3000,
+  "points": {
+    "likesPerPoint": 50,
+    "coinsPerPoint": 1
+  },
+  "cityName": "Meme City",
+  "mayorName": "Bürgermeister Memo",
+  "voice": "de-DE-ConradNeural",
+  "voiceRate": "+5%",
+  "speech": true,
+  "autoConnectTikTok": true,
+  "voicePitch": "-2Hz",
+  "voiceVolume": 1
+}
