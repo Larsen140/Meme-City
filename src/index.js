@@ -76,7 +76,7 @@ if (config.keepAwake !== false) keepAwake(log);
 
 // Hintergrundmusik, beim Sprechen des Buergermeisters leiser
 const music = new Music({
-  file: path.join(root, 'assets', 'musik', 'meme-city.wav'), dataDir: path.join(root, 'data'),
+  file: [path.join(root, 'assets', 'musik', 'meme-city-action.wav'), path.join(root, 'assets', 'musik', 'meme-city.wav')].find((f) => fs.existsSync(f)), dataDir: path.join(root, 'data'),
   volume: config.musicVolume ?? 0.2, duckVolume: config.musicDuckVolume ?? 0.06, enabled: config.music !== false,
 }, log);
 const speakStart = speech.onStart, speakEnd = speech.onEnd;
