@@ -4,6 +4,7 @@
 //  3. Chat-Befehle: "farbe rot", "haustier katze", "party"
 import { BASE, plotCenter, frontOf, art, cap } from './city.js';
 import { sleep } from './minecraft.js';
+import { CAR_COLORS, CAR_LIKES } from './carpark.js';
 import { closest } from './typo.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -277,6 +278,11 @@ export class Action {
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdPet(p, w || ''), true;
     }
+    if (/^auto\b|\bauto ?farbe\b|\bmein auto\b/.test(t)) {
+      const w = words.find((x) => CAR_COLORS[x]) || words.map((x) => (x.length >= 3 && !/auto|farbe|mein/.test(x) ? closest(x, Object.keys(CAR_COLORS)) : null)).find(Boolean);
+      this.log(`[Befehl] @${p.name}: ${text}`);
+      return this.cmdCar(p, w || ''), true;
+    }
     if (/farbe|color/.test(t)) {
       const w = words.find((x) => COLORS[x]) || words.map((x) => (x.length >= 3 && !/farbe|color|dach/.test(x) ? closest(x, Object.keys(COLORS)) : null)).find(Boolean);
       if (!w && /[?]|^(wie|was|wo|welche|kann|gibt)/.test(t)) return false; // Frage -> beantwortet der Buergermeister
@@ -369,6 +375,21 @@ export class Action {
     const need = c.nextLevel ? Math.max(1, Math.ceil(c.coinsNeeded)) : 0;
     if (need) this.game.addPoints(p, need);
     else this.builder.enqueue({ type: 'camera', player: p });
+  }
+
+  cmdCar(p, word) {
+    if (!p.car) {
+      const rest = Math.max(0, CAR_LIKES - p.likes);
+      return this.game.ack(p, p.plot === null ? '🏠 Erst ein Haus – schreib **Haus**' : `🚗 Eigenes Auto ab **10.000 Likes** – noch ${rest.toLocaleString('de-DE')}`);
+    }
+    if (!word) return this.game.ack(p, '🚗 Schreib z. B. **auto rot** oder **auto türkis**');
+    if (!this.ready('car:' + p.id, 30_000)) return this.waitHint(p, 'Umlackieren');
+    p.car.color = CAR_COLORS[word];
+    this.game.store.save();
+    this.game.parkCar(p);
+    this.game.ack(p, `🚗 Dein Auto wird **${word}** lackiert`);
+    this.broadcast({ type: 'ticker', text: `🚗 @${p.name} lackiert das Auto ${word}!` });
+    this.builder.enqueue({ type: 'camera', player: p });
   }
 
   // ---------- Dabeibleiben: nach 5 Minuten waechst das eigene Haus eine Stufe (einmal pro LIVE) ----------

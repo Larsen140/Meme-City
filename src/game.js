@@ -2,6 +2,7 @@ import fs from 'fs';
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
 import { findBigSite } from './bigbuild.js';
+import { CAR_LIKES, parkedCarCommands } from './carpark.js';
 import { COMMUNITY_PROJECTS, COMMUNITY_CELLS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
 import { fixCommand } from './typo.js';
@@ -56,6 +57,9 @@ export class Game {
     this.sessionLikes = new Map(); // Likes je Zuschauer in diesem Stream
     this.likeLog = [];             // fuer "Likes pro Minute"
     setInterval(() => this.likeStats(), 45_000);
+    setInterval(() => this.carStats(), 15_000);
+    // Wer schon 10.000 Likes hat, bekommt sein Auto nachgeliefert (ohne grosse Ansage)
+    setTimeout(() => { for (const p of Object.values(this.store.players)) if (p.plot !== null && p.likes >= CAR_LIKES && !p.car) this.giveCar(p, true); }, 20_000);
     // Chat-Befehle regelmaessig zeigen (versetzt zur Like-Statistik)
     setTimeout(() => { this.broadcast({ type: 'help' }); setInterval(() => this.broadcast({ type: 'help' }), 60_000); }, 20_000);
   }
@@ -155,6 +159,39 @@ export class Game {
     this.builder.enqueue({ type: 'fn', fn: () => this.builder.prepareFreePlots(from, to) });
   }
 
+  // ---------- Eigenes Auto ab 10.000 Likes ----------
+
+  /** Auto (neu) in den Vorgarten stellen – laeuft in der Bau-Warteschlange nach dem Hausbau. */
+  parkCar(p) {
+    this.builder.enqueue({ type: 'fn', fn: () => this.builder.mc.sendAll(parkedCarCommands(p, p.car.color)) });
+  }
+
+  giveCar(p, quiet = false) {
+    if (p.car || p.plot === null) return;
+    const colors = ['red', 'blue', 'yellow', 'lime', 'orange', 'light_blue', 'pink', 'purple', 'white', 'black'];
+    p.car = { color: colors[Math.floor(Math.random() * colors.length)], at: Date.now() };
+    this.store.save();
+    this.log(`[Auto] @${p.name} (${p.likes} Likes)`);
+    this.parkCar(p);
+    if (quiet) return;
+    this.broadcast({ type: 'banner', title: `🚗 @${p.name} HAT EIN AUTO!`, text: '10.000 Likes – steht jetzt im Vorgarten', avatar: p.avatar, big: true });
+    this.speech.say(pick([
+      `Sheesh! ${spoken(p)} hat zehntausend Likes gegeben und kriegt ein eigenes Auto! Schreib auto und eine Farbe, dann wird es umlackiert.`,
+      `Brumm brumm! ${spoken(p)} fährt ab jetzt mit eigenem Auto durch Meme City. Absolut goated!`,
+    ]), true);
+    this.builder.enqueue({ type: 'camera', player: p });
+    this.carStats();
+  }
+
+  /** Anzeige im Overlay: wer ist am naechsten dran am Auto? */
+  carStats() {
+    const all = Object.values(this.store.players);
+    const owners = all.filter((p) => p.car).length;
+    const next = [...this.sessionLikes.keys()].map((id) => this.store.players[id]).filter((p) => p && !p.car && p.likes > 0)
+      .sort((a, b) => b.likes - a.likes).slice(0, 3).map((p) => ({ name: p.name, avatar: p.avatar, likes: p.likes }));
+    this.broadcast({ type: 'cars', owners, next, need: CAR_LIKES });
+  }
+
   /** Grundstuecke, die fuer grosse Gemeinschaftsbauten reserviert sind. */
   reservedPlots() {
     return new Set(Object.values(this.store.data.bigSites || {}).flatMap((s) => s.plots));
@@ -190,6 +227,7 @@ export class Game {
     p.level = levelForPoints(p.points);
     this.store.save();
     this.builder.enqueue({ type: 'build', player: p });
+    if (p.likes >= CAR_LIKES) this.giveCar(p, true);
     const n = spoken(p);
     const lines = [
       `Neuer Eintrag im Grundbuch: ${n}! Willkommen in Meme City.`,
@@ -215,6 +253,7 @@ export class Game {
       p.level = newLevel;
       p._almost = null;
       this.builder.enqueue({ type: 'build', player: p });
+      if (p.car) this.parkCar(p);
       this.pushState();
       const n = spoken(p), name = levelInfo(newLevel).name;
       this.speech.say(pick([
@@ -397,6 +436,7 @@ export class Game {
     if (!p) return;
     p.likes += count;
     this.store.data.totals.likes += count;
+    if (p.likes >= CAR_LIKES && !p.car && p.plot !== null) this.giveCar(p);
     // Like-Statistik fuer diesen Stream
     const before = this.sessionLikes.get(p.id) || 0;
     this.sessionLikes.set(p.id, before + count);

@@ -359,6 +359,15 @@
   #comm { padding: 10px 12px !important; }
   #comm .ptitle { font-size: 17px !important; } #comm .cname { font-size: 24px !important; margin: 0 0 2px !important; }
   #comm .nums { font-size: 19px !important; } #comm .bar { height: 18px !important; margin-top: 4px; }
+  #cars { padding: 10px 12px; }
+  #cars .ptitle { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+  #cars .cr { display: flex; align-items: center; gap: 7px; font-size: 19px; font-weight: 800; margin-top: 5px; }
+  #cars .cr img, #cars .cr .ava { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+  #cars .cr .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #cars .cb { height: 8px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; margin: 2px 0 0 35px; }
+  #cars .cb i { display: block; height: 100%; background: linear-gradient(90deg, #ffc93c, #ff7a3d); transition: width .6s; }
+  #cars .hint { font-size: 16px; color: #cfd3ff; margin-top: 6px; }
+  #cars .hint b { color: #fff; }
 
   /* Buergermeister kleiner in der Ecke */
   #mayor { bottom: 150px !important; transform: scale(.7); transform-origin: left bottom; }
@@ -412,6 +421,7 @@
 <div id="right">
   <div id="honor" class="panel"></div>
   <div id="comm" class="panel"></div>
+  <div id="cars" class="panel" style="display:none"></div>
 </div>
 <div id="gifts" class="panel"></div>
 
@@ -694,6 +704,13 @@ function nextTicker() {
 nextTicker();
 
 // ---------- Sofort-Rueckmeldung ----------
+function showCars(c) {
+  const el = $('cars');
+  const k = (n) => n >= 1000 ? (Math.floor(n / 100) / 10).toLocaleString('de-DE') + 'k' : String(n);
+  const rows = c.next.map((p) => `<div class="cr">${ava(p.avatar)}<span class="nm">@${esc(p.name)}</span><span>${k(p.likes)}</span></div><div class="cb"><i style="width:${Math.min(100, 100 * p.likes / c.need)}%"></i></div>`).join('');
+  el.innerHTML = `<div class="ptitle">🚗 EIGENES AUTO AB 10K LIKES</div>${rows}<div class="hint">${c.owners ? `<b>${c.owners}</b> Autos in der Stadt · ` : ''}Farbe: <b>auto rot</b></div>`;
+  el.style.display = '';
+}
 function showAck(a) {
   const box = $('acks');
   const d = document.createElement('div');
@@ -862,6 +879,7 @@ function connect() {
     else if (m.type === 'player') { ['likestats', 'help', 'gifts'].forEach((id) => $(id).classList.remove('show')); showPlayer(m.card); }
     else if (m.type === 'likestats') showLikeStats(m);
     else if (m.type === 'goal') showGoal(m);
+    else if (m.type === 'cars') showCars(m);
     // Top-Unterstuetzer-Tafel abgeschaltet (zeigte Coins)
     else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);
