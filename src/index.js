@@ -15,6 +15,7 @@ import { CityLife } from './life.js';
 import { Music } from './music.js';
 import { Action } from './action.js';
 import { GiftFx } from './giftfx.js';
+import { keepAwake } from './keepawake.js';
 import { plotCenter, roadCommands, lampCommands } from './city.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -57,6 +58,7 @@ const game = new Game({ store, builder, speech, config, broadcast, log });
 const tiktok = new TikTok(config.tiktokName, game, log);
 game.action = new Action({ game, builder, speech, broadcast, config, log });
 game.giftFx = new GiftFx({ game, builder, speech, broadcast, log });
+if (config.keepAwake !== false) keepAwake(log);
 
 // Hintergrundmusik, beim Sprechen des Buergermeisters leiser
 const music = new Music({
