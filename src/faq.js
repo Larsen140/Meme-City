@@ -36,7 +36,7 @@ export function answer(game, p, t, name) {
       : `${name}, du hast noch kein Haus. Schreib Haus, dann baue ich dir eins!`],
     // ---- Befehle ----
     [/farbe|dach|anmal|streich/, () => `Schreib zum Beispiel farbe rot, farbe blau oder farbe lila. Dann streiche ich dein Dach neu!`],
-    [/haustier|tier|hund|katze|pinguin|pet/, () => `Schreib haustier und ein Tier, zum Beispiel haustier katze, hund, pinguin, fuchs oder panda. Das Tier zieht in deinen Vorgarten!`],
+    [/haustier|tier|hund|katze|pinguin|pet/, () => `Schreib haustier und ein Tier, zum Beispiel haustier katze, hund, pinguin, löwe, drache oder faultier. Das Tier zieht in deinen Vorgarten!`],
     [/party|feier/, () => `Schreib party, dann gibt es Feuerwerk bei deinem Haus!`],
     [/nord|süd|sued|team|duell|kampf/, () => `Alle paar Minuten kämpfen Nord gegen Süd. Schreib nord oder süd und like für dein Team. Die Gewinner bekommen Bonuspunkte!`],
     [/abstimm|wählen|waehlen|voting|verlosung|was passiert (als nächstes|gleich)/, () => `Alle paar Minuten stimmt ihr ab, was passiert. Schreib dann eins, zwei oder drei. Jede Stimme gibt auch einen Punkt fürs Haus!`],

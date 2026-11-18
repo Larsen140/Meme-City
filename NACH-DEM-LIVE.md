@@ -1,7 +1,7 @@
 # Nach dem Live umsetzen (Wünsche aus dem Chat, 18.11.2026)
 
 - ERLEDIGT 18.11.: Pinguin als Haustier (Modell), Tippfehler-Hilfe vom Bürgermeister, Befehlsleiste dauerhaft oben, Overlay kompakter, Abstimmung ersetzt Verlosung, Begrüßung im Laufband
-- Besondere Haustiere: Enderdrache, Wither, Enderman, Löwe, Gürteltier, Fisch → harmlose Ersatz-Tiere oder Modelle
+- Besondere Haustiere: Gürteltier fehlt noch (Löwe, Drache, Faultier, Enderman, Wither sind als Modelle drin)
 - Haustier mit eigenem Namen (z. B. „Haustier Hund Arron“)
 - Haustier tauschen („Haustier ändern“)
 - Mehr Farben (hellblau, türkis …) und Farben im Log mitschreiben

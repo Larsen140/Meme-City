@@ -21,7 +21,9 @@ const PETS = {
   schaf: ['sheep', 'Schaf'], huhn: ['chicken', 'Huhn'], pferd: ['horse', 'Pferd'], frosch: ['frog', 'Frosch'],
   axolotl: ['axolotl', 'Axolotl'], biene: ['bee', 'Biene'], lama: ['llama', 'Lama'], esel: ['donkey', 'Esel'],
   fisch: ['tropical_fish', 'Fisch'], schildkröte: ['turtle', 'Schildkröte'], schildkroete: ['turtle', 'Schildkröte'], bär: ['polar_bear', 'Eisbär'], baer: ['polar_bear', 'Eisbär'], eisbär: ['polar_bear', 'Eisbär'],
-  ziege: ['goat', 'Ziege'], kamel: ['camel', 'Kamel'], wolf: ['wolf', 'Wolf'], ente: ['chicken', 'Ente'], pinguin: ['penguin', 'Pinguin'], kaninchen: ['rabbit', 'Kaninchen'], katz: ['cat', 'Katze'],
+  ziege: ['goat', 'Ziege'], kamel: ['camel', 'Kamel'], wolf: ['wolf', 'Wolf'], ente: ['chicken', 'Ente'], pinguin: ['penguin', 'Pinguin'],
+  löwe: ['lion', 'Löwe'], loewe: ['lion', 'Löwe'], drache: ['dragon', 'Drache'], enderdrache: ['dragon', 'Drache'], faultier: ['sloth', 'Faultier'],
+  enderman: ['enderman_model', 'Enderman'], wither: ['wither_model', 'Wither'], kaninchen: ['rabbit', 'Kaninchen'], katz: ['cat', 'Katze'],
 };
 
 /** Tierwort erkennen, auch Mehrzahl/Verkleinerung: "hunde", "katzen", "kätzchen", "hündchen" */
@@ -53,16 +55,96 @@ const PENGUIN = [
   ['orange_concrete', -0.24, 0, -0.02, 0.19, 0.08, 0.3],    // Fuss
   ['orange_concrete', 0.05, 0, -0.02, 0.19, 0.08, 0.3],     // Fuss
 ];
-async function summonPenguin(mc, x, z, yaw, plot, label) {
+// Weitere Tiere, die es in Minecraft nicht (harmlos) gibt – gleiche Bauweise, Gesicht zeigt nach +z
+const LION = [
+  ['yellow_terracotta', -0.3, 0.35, -0.6, 0.6, 0.45, 1.0],    // Koerper
+  ['yellow_terracotta', -0.27, 0, -0.55, 0.15, 0.36, 0.15],   // Beine
+  ['yellow_terracotta', 0.12, 0, -0.55, 0.15, 0.36, 0.15],
+  ['yellow_terracotta', -0.27, 0, 0.22, 0.15, 0.36, 0.15],
+  ['yellow_terracotta', 0.12, 0, 0.22, 0.15, 0.36, 0.15],
+  ['brown_terracotta', -0.38, 0.38, 0.28, 0.76, 0.72, 0.34],  // Maehne
+  ['yellow_terracotta', -0.22, 0.5, 0.55, 0.44, 0.42, 0.3],   // Kopf
+  ['black_concrete', -0.06, 0.6, 0.84, 0.12, 0.08, 0.04],     // Nase
+  ['black_concrete', -0.15, 0.78, 0.84, 0.06, 0.06, 0.03],    // Augen
+  ['black_concrete', 0.09, 0.78, 0.84, 0.06, 0.06, 0.03],
+  ['brown_terracotta', -0.2, 0.92, 0.6, 0.1, 0.1, 0.08],      // Ohren
+  ['brown_terracotta', 0.1, 0.92, 0.6, 0.1, 0.1, 0.08],
+  ['yellow_terracotta', -0.04, 0.62, -0.9, 0.08, 0.08, 0.32], // Schwanz
+  ['brown_terracotta', -0.07, 0.57, -1.0, 0.14, 0.14, 0.12],
+];
+const DRAGON = [
+  ['black_concrete', -0.3, 0.4, -0.5, 0.6, 0.5, 1.0],         // Koerper
+  ['black_concrete', -0.28, 0, -0.45, 0.14, 0.42, 0.14],      // Beine
+  ['black_concrete', 0.14, 0, -0.45, 0.14, 0.42, 0.14],
+  ['black_concrete', -0.28, 0, 0.3, 0.14, 0.42, 0.14],
+  ['black_concrete', 0.14, 0, 0.3, 0.14, 0.42, 0.14],
+  ['black_concrete', -0.12, 0.75, 0.4, 0.24, 0.5, 0.24],      // Hals
+  ['black_concrete', -0.2, 1.15, 0.35, 0.4, 0.3, 0.55],       // Kopf
+  ['purple_concrete', -0.21, 1.3, 0.72, 0.42, 0.06, 0.08],    // leuchtende Augen
+  ['gray_concrete', -0.16, 1.45, 0.4, 0.06, 0.16, 0.06],      // Hoerner
+  ['gray_concrete', 0.1, 1.45, 0.4, 0.06, 0.16, 0.06],
+  ['black_concrete', -1.2, 0.85, -0.4, 0.9, 0.06, 0.7],       // Fluegel
+  ['black_concrete', 0.3, 0.85, -0.4, 0.9, 0.06, 0.7],
+  ['gray_concrete', -0.04, 0.9, -0.35, 0.08, 0.12, 0.08],     // Stacheln
+  ['gray_concrete', -0.04, 0.9, -0.05, 0.08, 0.12, 0.08],
+  ['black_concrete', -0.1, 0.45, -1.2, 0.2, 0.2, 0.7],        // Schwanz
+];
+const SLOTH = [
+  ['brown_terracotta', -0.3, 0.1, -0.25, 0.6, 0.65, 0.5],     // Koerper (sitzt)
+  ['brown_terracotta', -0.24, 0.7, -0.18, 0.48, 0.38, 0.42],  // Kopf
+  ['white_terracotta', -0.18, 0.74, 0.22, 0.36, 0.28, 0.05],  // Gesicht
+  ['brown_concrete', -0.16, 0.84, 0.26, 0.12, 0.08, 0.02],    // Augenflecken
+  ['brown_concrete', 0.04, 0.84, 0.26, 0.12, 0.08, 0.02],
+  ['black_concrete', -0.04, 0.77, 0.27, 0.08, 0.05, 0.02],    // Nase
+  ['brown_terracotta', -0.42, 0.25, -0.05, 0.12, 0.45, 0.14], // Arme
+  ['brown_terracotta', 0.3, 0.25, -0.05, 0.12, 0.45, 0.14],
+  ['brown_terracotta', -0.25, 0, 0.05, 0.18, 0.15, 0.3],      // Beine
+  ['brown_terracotta', 0.07, 0, 0.05, 0.18, 0.15, 0.3],
+];
+const WITHER = [
+  ['black_concrete', -0.08, 0.2, -0.08, 0.16, 1.0, 0.16],     // Wirbelsaeule
+  ['black_concrete', -0.3, 0.45, -0.06, 0.6, 0.08, 0.12],     // Rippen
+  ['black_concrete', -0.3, 0.65, -0.06, 0.6, 0.08, 0.12],
+  ['black_concrete', -0.3, 0.85, -0.06, 0.6, 0.08, 0.12],
+  ['black_concrete', -0.75, 1.1, -0.12, 1.5, 0.2, 0.24],      // Schultern
+  ['black_concrete', -0.22, 1.3, -0.22, 0.44, 0.44, 0.44],    // Kopf Mitte
+  ['white_concrete', -0.15, 1.5, 0.22, 0.1, 0.06, 0.02],
+  ['white_concrete', 0.05, 1.5, 0.22, 0.1, 0.06, 0.02],
+  ['black_concrete', -0.75, 1.3, -0.15, 0.3, 0.3, 0.3],       // Seitenkoepfe
+  ['black_concrete', 0.45, 1.3, -0.15, 0.3, 0.3, 0.3],
+  ['white_concrete', -0.68, 1.42, 0.15, 0.06, 0.05, 0.02],
+  ['white_concrete', -0.56, 1.42, 0.15, 0.06, 0.05, 0.02],
+  ['white_concrete', 0.52, 1.42, 0.15, 0.06, 0.05, 0.02],
+  ['white_concrete', 0.64, 1.42, 0.15, 0.06, 0.05, 0.02],
+];
+const ENDERMAN = [
+  ['black_concrete', -0.2, 1.2, -0.12, 0.4, 0.6, 0.24],       // Koerper
+  ['black_concrete', -0.17, 0, -0.06, 0.1, 1.2, 0.1],         // lange Beine
+  ['black_concrete', 0.07, 0, -0.06, 0.1, 1.2, 0.1],
+  ['black_concrete', -0.32, 0.6, -0.05, 0.1, 1.15, 0.1],      // lange Arme
+  ['black_concrete', 0.22, 0.6, -0.05, 0.1, 1.15, 0.1],
+  ['black_concrete', -0.22, 1.8, -0.22, 0.44, 0.44, 0.44],    // Kopf
+  ['magenta_concrete', -0.17, 1.95, 0.22, 0.13, 0.05, 0.02],  // Augen
+  ['magenta_concrete', 0.04, 1.95, 0.22, 0.13, 0.05, 0.02],
+]
+export const MODELS = {
+  penguin: { parts: PENGUIN, S: 1.4, top: 1.2 },
+  lion: { parts: LION, S: 1.25, top: 1.05 },
+  dragon: { parts: DRAGON, S: 1.2, top: 1.65 },
+  sloth: { parts: SLOTH, S: 1.35, top: 1.1 },
+  wither_model: { parts: WITHER, S: 1.1, top: 1.8 },
+  enderman_model: { parts: ENDERMAN, S: 1.15, top: 2.25 },
+};
+export async function summonModel(mc, kind, x, z, yaw, plot, label) {
+  const { parts, S, top } = MODELS[kind];
   const tags = `Tags:["mc_pet","mc_pet_${plot}"]`;
   const px = x + 0.5, pz = z + 0.5;
   let r = '';
-  const S = 1.4; // etwas groesser, damit man ihn auf dem Handy gut sieht
-  for (const [b, ...v] of PENGUIN) {
+  for (const [b, ...v] of parts) {
     const [tx, ty, tz, sx, sy, sz] = v.map((n) => +(n * S).toFixed(3));
     r = await mc.send(`summon block_display ${px} ${BASE} ${pz} {${tags},Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[${tx}f,${ty}f,${tz}f],scale:[${sx}f,${sy}f,${sz}f]}}`);
   }
-  await mc.send(`summon text_display ${px} ${BASE + 1.9} ${pz} {${tags},billboard:"center",text:${JSON.stringify(label)},background:1073741824}`);
+  await mc.send(`summon text_display ${px} ${BASE + top * S + 0.3} ${pz} {${tags},billboard:"center",text:${JSON.stringify(label)},background:1073741824}`);
   return r;
 }
 
@@ -547,7 +629,7 @@ export class Action {
       await this.mc.send(`kill @e[tag=mc_pet_${p.plot}]`);
       // NoAI: das Tier bleibt im Vorgarten stehen und laeuft nicht weg
       const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
-      const r = pet[0] === 'penguin' ? await summonPenguin(this.mc, x, z, yaw, p.plot, `${p.name}s Pinguin`) : await this.mc.send(`summon ${pet[0]} ${x} ${BASE} ${z} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
+      const r = MODELS[pet[0]] ? await summonModel(this.mc, pet[0], x, z, yaw, p.plot, `${p.name}s ${pet[1]}`) : await this.mc.send(`summon ${pet[0]} ${x} ${BASE} ${z} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
       this.log(`[Haustier] ${p.name}: ${pet[0]} -> ${r}`);
       await this.mc.send(`particle minecraft:heart ${x} ${BASE + 1.5} ${z} 0.6 0.4 0.6 0 12 force`);
       await this.mc.send(`particle minecraft:poof ${x} ${BASE + 0.5} ${z} 0.4 0.3 0.4 0.05 20 force`);
