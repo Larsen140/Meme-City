@@ -39,6 +39,26 @@ function carParts(color, kind) {
   return parts;
 }
 
+/** Heissluftballon: bunte Huelle in Streifen, Korb, Seile (Mittelpunkt = Korb). */
+function balloonParts(c1, c2) {
+  const W = (b) => b;
+  return [
+    [W(`${c1}_wool`), T(-2.5, 3, -2.5, 5, 2, 5)],
+    [W(`${c2}_wool`), T(-3, 5, -3, 6, 2, 6)],
+    [W(`${c1}_wool`), T(-3, 7, -3, 6, 2, 6)],
+    [W(`${c2}_wool`), T(-2.5, 9, -2.5, 5, 1.5, 5)],
+    [W(`${c1}_wool`), T(-1.5, 10.5, -1.5, 3, 0.7, 3)],
+    ['oak_planks', T(-0.8, 0, -0.8, 1.6, 1, 1.6)],
+    ['oak_fence', T(-0.8, 1, -0.8, 0.2, 2, 0.2)], ['oak_fence', T(0.6, 1, -0.8, 0.2, 2, 0.2)],
+    ['oak_fence', T(-0.8, 1, 0.6, 0.2, 2, 0.2)], ['oak_fence', T(0.6, 1, 0.6, 0.2, 2, 0.2)],
+  ];
+}
+const BALLOONS = [
+  { r: 70, h: 42, speed: 0.012, c1: 'red', c2: 'yellow', a: 0 },
+  { r: 55, h: 50, speed: -0.009, c1: 'light_blue', c2: 'white', a: 2.1 },
+  { r: 85, h: 46, speed: 0.008, c1: 'lime', c2: 'purple', a: 4.2 },
+];
+
 export class CityLife {
   constructor(mc, cfg = {}, log = console.log) {
     this.mc = mc;
@@ -71,6 +91,16 @@ export class CityLife {
               `Rotation:[${p.yaw}f,0f],block_state:"minecraft:${block}",${tr}}`);
           }
         }
+      }
+    }
+
+    // Heissluftballons (kreisen langsam ueber der Stadt, innerhalb des geladenen Bereichs)
+    await mc.send('kill @e[tag=mc_balloon]');
+    this.balloons = BALLOONS.map((b, i) => ({ ...b, id: i }));
+    for (const b of this.balloons) {
+      const x = (Math.cos(b.a) * b.r).toFixed(2), z = (Math.sin(b.a) * b.r).toFixed(2);
+      for (const [block, tr] of balloonParts(b.c1, b.c2)) {
+        await mc.send(`summon block_display ${x} ${BASE + b.h} ${z} {Tags:["mc_balloon","mc_balloon_${b.id}"],teleport_duration:${Math.round(TICK_MS / 50)},block_state:"minecraft:${block}",${tr}}`);
       }
     }
 
@@ -118,6 +148,11 @@ export class CityLife {
     if (this.busy) return;
     this.busy = true;
     try {
+      for (const b of this.balloons || []) {
+        b.a += b.speed * (TICK_MS / 1000) * 6;
+        const bob = Math.sin(Date.now() / 3000 + b.id) * 1.5;
+        await this.mc.send(`tp @e[tag=mc_balloon_${b.id}] ${(Math.cos(b.a) * b.r).toFixed(2)} ${(BASE + b.h + bob).toFixed(2)} ${(Math.sin(b.a) * b.r).toFixed(2)}`);
+      }
       for (const car of this.cars) {
         car.s += SPEED * (TICK_MS / 1000);
         const p = this.pos(car);

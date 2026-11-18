@@ -53,6 +53,8 @@ export class Builder {
     this.running = true;
     while (this.queue.length) {
       const job = this.queue.shift();
+      // Bei langer Warteschlange schneller bauen, damit niemand ewig wartet
+      this.fast = this.queue.length >= 3;
       try {
         if (job.type === 'build') await this.buildHouse(job.player, job.instant);
         else if (job.type === 'camera') await this.showHouse(job.player);
@@ -63,7 +65,54 @@ export class Builder {
       }
     }
     this.running = false;
-    await this.cameraOverview();
+    this.fast = false;
+    this.idleTour();
+  }
+
+  /** Drohnenflug durch die Stadt, solange nichts zu tun ist. Bricht sofort ab, wenn Arbeit kommt. */
+  async idleTour() {
+    if (this.touring) return;
+    this.touring = true;
+    const busy = () => this.running || this.queue.length > 0;
+    let step = 0;
+    try {
+      await sleep(1500);
+      while (!busy()) {
+        const kind = step++ % 6;
+        if (kind === 0 || kind === 3) {
+          // langsame Runde um den Stadtplatz
+          const start = Math.random() * Math.PI * 2;
+          for (let i = 1; i <= 4 && !busy(); i++) {
+            const a = start + (i * Math.PI) / 2, r = 72;
+            await this.camera(Math.cos(a) * r, BASE + 36, Math.sin(a) * r, 0, BASE + 2, 0, 6, true);
+          }
+        } else if (kind === 1 || kind === 4) {
+          // ein Haus aus der Naehe zeigen
+          const houses = this.housesProvider?.() || [];
+          if (houses.length) {
+            const p = houses[Math.floor(Math.random() * houses.length)];
+            const { x, z } = plotCenter(p.plot);
+            this.onEvent({ type: 'tourHouse', player: p });
+            await this.cameraAtPlot(x, z, Math.max((p.top ?? BASE + 10) - BASE, 10), false, 4, true);
+            await this.waitIdle(5000, busy);
+          }
+        } else if (kind === 2) {
+          // tiefer Flug ueber den Platz zum Brunnen
+          await this.camera(0, BASE + 14, 48, 0, BASE + 4, 0, 5, true);
+          await this.camera(0, BASE + 22, -40, 0, BASE + 2, 0, 7, true);
+        } else {
+          await this.camera(0, BASE + 55, 70, 0, BASE, 0, 4, true);
+          await this.waitIdle(6000, busy);
+        }
+      }
+    } finally {
+      this.touring = false;
+    }
+  }
+
+  async waitIdle(ms, busy) {
+    const end = Date.now() + ms;
+    while (Date.now() < end && !busy()) await sleep(200);
   }
 
   // ---------- Kamera ----------
@@ -84,7 +133,7 @@ export class Builder {
   }
 
   /** Fliegt die Kamera weich nach (x, y, z) mit Blick auf (lx, ly, lz). */
-  async camera(x, y, z, lx, ly, lz, seconds) {
+  async camera(x, y, z, lx, ly, lz, seconds, abortable = false) {
     [x, y, z, lx, ly, lz] = [x, y, z, lx, ly, lz].map(Number);
     await this.ensureCamera();
     const from = { ...this.cam };
@@ -110,12 +159,14 @@ export class Builder {
         pitch: from.pitch + (to.pitch - from.pitch) * t,
       };
       await this.mc.send(`tp @e[tag=mc_cam,limit=1] ${c.x.toFixed(2)} ${c.y.toFixed(2)} ${c.z.toFixed(2)} ${c.yaw.toFixed(1)} ${c.pitch.toFixed(1)}`);
+      this.cam = { x: c.x, y: c.y, z: c.z, yaw: c.yaw, pitch: c.pitch };
+      if (abortable && (this.running || this.queue.length)) return; // Drohnenflug weicht echter Arbeit
       if (!done) await sleep(CAM_STEP_TICKS * 50 - ((Date.now() - start) % (CAM_STEP_TICKS * 50)));
     }
     this.cam = { ...to, yaw: from.yaw + dYaw };
   }
 
-  async cameraAtPlot(cx, cz, height, inward = false) {
+  async cameraAtPlot(cx, cz, height, inward = false, seconds, abortable = false) {
     // Kamera schaut immer von aussen (weg vom Stadtplatz) auf das Haus, etwas von oben,
     // so dass Haus und Namensschild im freien Mittelfeld des Hochformat-Streams liegen.
     // Werte an Bildschirmfotos abgestimmt: kleine Haeuser steiler von oben, Hochhaeuser flacher.
@@ -128,7 +179,7 @@ export class Builder {
     const fr = frontOf(cx, cz), k = inward ? -1 : 1;
     const side = dist * 0.35;
     const x = cx + fr.dx * dist * k + (fr.dz ? side : 0), z = cz + fr.dz * dist * k + (fr.dx ? side : 0);
-    await this.camera(x, camY, z, cx, targetY, cz);
+    await this.camera(x, camY, z, cx, targetY, cz, seconds, abortable);
   }
 
   async cameraOverview() {
@@ -251,7 +302,8 @@ export class Builder {
     await mc.send(`playsound minecraft:block.anvil.place master @a ${cx} ${BASE + 3} ${cz} 1 1.2`);
     await sleep(700);
     // 4. Schicht fuer Schicht
-    const delay = Math.max(120, Math.min(450, 5000 / plan.layers.length));
+    const delay = this.fast ? 60 : Math.max(120, Math.min(450, 5000 / plan.layers.length));
+    player.top = plan.top;
     for (const l of plan.layers) {
       await mc.sendAll(l.cmds);
       await mc.send(`particle minecraft:happy_villager ${cx} ${l.y + 0.5} ${cz} ${plan.x2 - cx} 0.3 ${plan.z2 - cz} 0 25 force`);
@@ -268,8 +320,8 @@ export class Builder {
     await this.nameTag(player, plan.top);
     await mc.send(`playsound minecraft:entity.player.levelup master @a ${cx} ${BASE + 3} ${cz} 2 1`);
     this.onEvent({ type: 'buildDone', player, level });
-    await this.fireworkShow(cx, cz, level >= 10 ? 10 : 5, 6);
-    await sleep(2500);
+    await this.fireworkShow(cx, cz, this.fast ? 3 : level >= 10 ? 10 : 5, 6);
+    await sleep(this.fast ? 800 : 2500);
     await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
     player.builtLevel = level;
   }

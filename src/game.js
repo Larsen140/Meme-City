@@ -1,6 +1,6 @@
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
-import { COMMUNITY_PROJECTS } from './city.js';
+import { COMMUNITY_PROJECTS, plotCenter } from './city.js';
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
@@ -24,7 +24,12 @@ export class Game {
     this.coinsPerPoint = config.points?.coinsPerPoint ?? 1;
     this.checkedNoHouse = new Set();
 
+    builder.housesProvider = () => this.ranking();
     builder.onEvent = (ev) => {
+      if (ev.type === 'tourHouse') {
+        this.broadcast({ type: 'player', card: this.card(ev.player) });
+        this.broadcast({ type: 'ticker', text: `🏡 Zu Besuch bei @${ev.player.name}: ${levelInfo(ev.player.level).name}` });
+      }
       if (ev.type === 'buildStart') {
         this.broadcast({ type: 'ticker', text: `@${ev.player.name} baut aus: Stufe ${ev.level} · ${levelInfo(ev.level).name}`, highlight: true });
         this.broadcast({ type: 'player', card: this.card(ev.player) });
@@ -294,6 +299,12 @@ export class Game {
     this.broadcast({ type: 'likes', count, avatar: p.avatar, name: p.name });
     if (up > 0) this.addPoints(p, up);
     this.action?.onLike(p, count);
+    // Herzen steigen ueber dem eigenen Haus auf (hoechstens alle 4 Sekunden pro Person)
+    if (p.plot !== null && Date.now() - (p._heart || 0) > 4000) {
+      p._heart = Date.now();
+      const { x, z } = plotCenter(p.plot);
+      this.builder.mc.send(`particle minecraft:heart ${x} ${(p.top ?? -50) + 2} ${z} 1.5 0.8 1.5 0 ${Math.min(12, 2 + Math.floor(count / 5))} force`);
+    }
     this.thankLiker(p);
     if (p.plot === null && !this.checkedNoHouse.has(p.id) && p.likes >= 30) {
       this.checkedNoHouse.add(p.id);

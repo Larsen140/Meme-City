@@ -93,6 +93,7 @@ export class Speech {
   say(text, prio = false) {
     if (!text) return;
     if (!prio && this.queue.length >= 3) return; // nicht zu viel Gerede stapeln
+    if (this.queue.length >= 6) this.queue.shift(); // auch Wichtiges nicht endlos stapeln
     this.queue.push(text);
     this.next();
   }
