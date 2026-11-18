@@ -192,6 +192,10 @@ export class Action {
       if (!this.duel && !this.raffle && !this.vote && now >= this.nextRaffleAt) { this.nextRaffleAt = now + (config.voteEveryMinutes ?? 7) * 60_000; this.startVote(); }
     }, 1000);
     setInterval(() => this.loyaltyBonus(), (config.loyaltyMinutes ?? 5) * 60_000);
+    // Seit wann ist jemand in diesem LIVE dabei (ueberlebt Neustarts im selben Raum)
+    const st = game.store.data.stay;
+    this.since = new Map(st && st.roomId === this.roomId ? Object.entries(st.since) : []);
+    setInterval(() => this.stayStats(), 15_000);
 
     this.cooldown = new Map();
     setInterval(() => this.pushGoal(), 5000);
@@ -204,7 +208,7 @@ export class Action {
     this.roomId = roomId;
     if (!first) this.log(`[Like-Ziel] neuer LIVE – Ziel zurückgesetzt`);
     Object.assign(this, { sessionLikes: 0, goalStart: 0, goalTarget: this.firstGoal, eventIndex: 0, goalEvent: EVENTS[0] });
-    this.seen.clear(); this.stayDone.clear();
+    this.seen.clear(); this.stayDone.clear(); this.since.clear(); this.saveSince();
     this.pushGoal();
   }
 
@@ -228,6 +232,7 @@ export class Action {
 
   onLike(p, count) {
     this.active.set(p.id, Date.now());
+    this.markSince(p);
     this.stayCheck(p);
     this.sessionLikes += count;
     if (this.duel) this.addDuel(p, count);
@@ -242,6 +247,7 @@ export class Action {
   onChat(p, text) {
     const t = text.toLowerCase().trim();
     this.active.set(p.id, Date.now());
+    this.markSince(p);
     this.stayCheck(p);
     // Jede Nachricht baut ein bisschen am Gemeinschaftsbau mit (pro Person hoechstens alle 15 s)
     if (this.ready('cc:' + p.id, 15_000)) this.game.addCommunity(0.4);
@@ -457,13 +463,46 @@ export class Action {
 
   // ---------- Treue-Bonus: wer aktiv dabei bleibt, bekommt Punkte ----------
 
+  markSince(p) {
+    if (this.since.has(p.id)) return;
+    this.since.set(p.id, Date.now());
+    this.saveSince();
+  }
+
+  saveSince() {
+    this.game.store.data.stay = { roomId: this.roomId, since: Object.fromEntries(this.since) };
+  }
+
+  /** Je laenger dabei, desto mehr: alle 10 Minuten +1, von +2 bis hoechstens +10 */
+  stayRate(id, now = Date.now()) {
+    const mins = (now - (this.since.get(id) ?? now)) / 60_000;
+    return { mins: Math.floor(mins), pts: Math.min(10, 2 + Math.floor(mins / 10)) };
+  }
+
+  /** Overlay-Widget: Dabei-Bonus mit den treuesten Zuschauern */
+  stayStats() {
+    const now = Date.now(), win = 5 * 60_000;
+    const top = [...this.since.keys()].filter((id) => now - (this.active.get(id) || 0) < win)
+      .map((id) => ({ p: this.game.store.players[id], ...this.stayRate(id, now) })).filter((r) => r.p)
+      .sort((a, b) => b.mins - a.mins).slice(0, 3)
+      .map((r) => ({ name: r.p.name, avatar: r.p.avatar, mins: r.mins, pts: r.pts }));
+    this.broadcast({ type: 'stay', top });
+  }
+
   loyaltyBonus() {
     const now = Date.now(), win = 5 * 60_000;
     const lucky = [...this.active.entries()].filter(([, t]) => now - t < win).map(([id]) => this.game.store.players[id]).filter(Boolean);
     if (!lucky.length) return;
-    for (const p of lucky) this.game.addPoints(p, 2);
-    this.broadcast({ type: 'ticker', text: `💎 Treue-Bonus: ${lucky.length} aktive Bürger*innen bekommen +2 Punkte fürs Dabeibleiben!`, highlight: true });
-    this.speech.say(`Treue-Bonus! ${lucky.length} aktive Bürger bekommen zwei Punkte fürs Dabeibleiben. Bleibt dran, alle fünf Minuten gibt es mehr!`);
+    let best = null;
+    for (const p of lucky) {
+      const r = this.stayRate(p.id, now);
+      this.game.addPoints(p, r.pts);
+      this.game.ack(p, `⏱️ ${r.mins} Min dabei: **+${r.pts} Punkte**`);
+      if (!best || r.mins > best.mins) best = { p, ...r };
+    }
+    this.broadcast({ type: 'ticker', text: `💎 Dabei-Bonus für ${lucky.length} Bürger*innen – je länger dabei, desto mehr! Top: @${best.p.name} (${best.mins} Min, +${best.pts})`, highlight: true });
+    this.speech.say(`Dabei-Bonus! Je länger ihr dabei seid, desto mehr Punkte. ${spoken(best.p)} ist seit ${best.mins} Minuten dabei und kriegt ${best.pts} Punkte. Respekt!`);
+    this.stayStats();
     this.game.pushState();
   }
 

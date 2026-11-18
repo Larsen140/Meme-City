@@ -373,6 +373,14 @@
   @keyframes gtaVig { 0% { opacity: 0; } 10% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
   #gta.flash::after { content: ''; position: absolute; inset: 0; background: #fff; animation: gtaFlash .4s ease-out forwards; }
   @keyframes gtaFlash { 0% { opacity: .75; } 100% { opacity: 0; } }
+  #stay { padding: 10px 12px; }
+  #stay .ptitle { font-size: 17px; font-weight: 800; color: var(--mint); letter-spacing: 1px; }
+  #stay .rule { font-size: 16px; color: #cfd3ff; margin: 2px 0 4px; }
+  #stay .rule b { color: #fff; }
+  #stay .cr { display: flex; align-items: center; gap: 7px; font-size: 19px; font-weight: 800; margin-top: 5px; }
+  #stay .cr img, #stay .cr .ava { width: 28px; height: 28px; border-radius: 50%; flex: none; }
+  #stay .cr .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #stay .cr .pt { color: var(--gold); }
   #cars { padding: 10px 12px; }
   #cars .ptitle { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
   #cars .cr { display: flex; align-items: center; gap: 7px; font-size: 19px; font-weight: 800; margin-top: 5px; }
@@ -436,6 +444,7 @@
   <div id="honor" class="panel"></div>
   <div id="comm" class="panel"></div>
   <div id="cars" class="panel" style="display:none"></div>
+  <div id="stay" class="panel" style="display:none"></div>
 </div>
 <div id="gifts" class="panel"></div>
 
@@ -724,6 +733,12 @@ function gtaFx(phase) {
   if (phase === 'up') { el.className = ''; void el.offsetWidth; el.className = 'go flash'; }
   else { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 }
+function showStay(s) {
+  const el = $('stay');
+  const rows = s.top.map((p) => `<div class="cr">${ava(p.avatar)}<span class="nm">@${esc(p.name)}</span><span>${p.mins}′</span><span class="pt">+${p.pts}</span></div>`).join('');
+  el.innerHTML = `<div class="ptitle">⏱️ DABEI-BONUS</div><div class="rule">Je länger dabei, desto mehr!<br>alle 5 Min: <b>+2</b> … bis <b>+10</b> Punkte</div>${rows}`;
+  el.style.display = '';
+}
 function showCars(c) {
   const el = $('cars');
   const k = (n) => n >= 1000 ? (Math.floor(n / 100) / 10).toLocaleString('de-DE') + 'k' : String(n);
@@ -900,6 +915,7 @@ function connect() {
     else if (m.type === 'likestats') showLikeStats(m);
     else if (m.type === 'goal') showGoal(m);
     else if (m.type === 'cars') showCars(m);
+    else if (m.type === 'stay') showStay(m);
     else if (m.type === 'gta') gtaFx(m.phase);
     // Top-Unterstuetzer-Tafel abgeschaltet (zeigte Coins)
     else if (m.type === 'help') showHelp();
