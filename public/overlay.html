@@ -51,14 +51,15 @@
   #comm { padding: 16px 20px; }
   .bar { height: 26px; background: rgba(255,255,255,.1); border-radius: 13px; overflow: hidden; margin-top: 8px; }
   .bar i { display: block; height: 100%; width: 0; border-radius: 13px; background: linear-gradient(90deg, var(--mint), var(--sky)); transition: width .8s ease; }
-  #gifts { position: absolute; left: 36px; right: 36px; top: 1150px; padding: 16px 24px; opacity: 0; transform: translateY(30px); transition: all .4s ease; border-color: var(--gold); }
+  #gifts { position: absolute; left: 36px; right: 36px; top: 1110px; padding: 12px 22px; opacity: 0; transform: translateY(30px); transition: all .4s ease; border-color: var(--gold); }
   #gifts.show { opacity: 1; transform: none; }
   #gifts .rows2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 24px; }
   #gifts .g { display: flex; align-items: center; gap: 10px; font-size: 22px; padding: 3px 0; }
   #gifts .g .ic { width: 34px; text-align: center; font-size: 26px; }
   #gifts .g { font-size: 20px; }
   #gifts .g b { min-width: 0; }
-  #gifts .tip { font-size: 17px; }
+  #gifts .tip { font-size: 16px; margin-top: 2px; }
+  #gifts .g { padding: 1px 0; }
   #honor .nm { font-size: 26px; }
   #honor img, #honor .ava { width: 60px; height: 60px; }
   .row { font-size: 22px; }
@@ -234,15 +235,20 @@ function renderState(s) {
 }
 
 function renderGifts(s) {
+  // Reine Spielregel-Info (TikTok-konform): beschreibt, was passiert – keine Aufforderung.
   const rows = [
-    ['🌹', 'Rose', '+1 UP · Herzen'],
-    ['🍩', 'Donut', '+30 UP · Feuerwerk'],
-    ['🫶', 'Herz-Hände', '+100 UP · Show'],
-    ['🌌', 'Universe', '+1000 UP · PARTY'],
+    ['🌹', 'Rose', 'Blume im Garten'],
+    ['🫰', 'Fingerherz', 'Riesen-Herz'],
+    ['🍩', 'Donut', 'Riesen-Donut'],
+    ['🌸', 'Parfüm', 'Blütenregen'],
+    ['🚀', 'Rakete', 'Raketen vom Dach'],
+    ['🌌', 'Galaxie', 'Sternennacht'],
+    ['🗿', 'ab 1.000', 'Denkmal am Platz'],
+    ['👑', 'Platz 1', 'Goldene Krone'],
   ];
-  $('gifts').innerHTML = `<div class="ptitle">🎁 GESCHENK-EFFEKTE</div>` +
+  $('gifts').innerHTML = `<div class="ptitle">🎁 SO WIRKEN GESCHENKE IN MEME CITY</div>` +
     '<div class="rows2">' + rows.map(([ic, n, e]) => `<div class="g"><div class="ic">${ic}</div><b>${n}</b><span>${e}</span></div>`).join('') + '</div>' +
-    `<div class="tip">1 Coin = 1 UP · ${s.likesPerPoint || 50} Likes = 1 UP · UP bauen dein Haus aus!</div>`;
+    `<div class="tip">Jedes Geschenk zählt als Punkte fürs eigene Haus (1 Coin = 1 Punkt) · Likes zählen auch (${s.likesPerPoint || 50} = 1 Punkt)</div>`;
 }
 
 // ---------- Spieler-Karte ----------

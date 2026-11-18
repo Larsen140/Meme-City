@@ -44,6 +44,15 @@ export class GiftFx {
     return { x, z, top: p.top ?? BASE + 10, fr: frontOf(x, z) };
   }
 
+  /** Kurze Beschreibung, was ein Geschenk ausgeloest hat (fuer das Danke-Banner). */
+  describe(gift, coins) {
+    const kind = GIFTS.find(([re]) => re.test(gift.name || ''))?.[1]
+      || (coins >= 1000 ? 'mega' : coins >= 100 ? 'heart' : coins >= 30 ? 'donut' : coins >= 5 ? 'sparkle' : 'rose');
+    const text = { rose: 'Blume im Garten 🌹', sparkle: 'Funkeln am Haus ✨', heart: 'Riesen-Herz überm Haus ❤️', donut: 'Riesen-Donut 🍩',
+      perfume: 'Blütenregen 🌸', rocket: 'Raketen vom Dach 🚀', galaxy: 'Sternennacht 🌌', mega: 'PARTY in Meme City 🎉' }[kind];
+    return coins >= 1000 ? `${text} + Denkmal 🗿` : text;
+  }
+
   /** Wird bei jedem Geschenk aufgerufen. */
   run(p, gift, coins) {
     this.sessionCoins.set(p.id, (this.sessionCoins.get(p.id) || 0) + coins);
