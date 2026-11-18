@@ -4,7 +4,7 @@
 //  3. Chat-Befehle: "farbe rot", "haustier katze", "party"
 import { BASE, plotCenter, frontOf, art, cap } from './city.js';
 import { sleep } from './minecraft.js';
-import { CAR_COLORS, CAR_LIKES } from './carpark.js';
+import { CAR_COLORS, CAR_LIKES, CARS_ON } from './carpark.js';
 import { FLAGS, flagCommands } from './flags.js';
 import { closest } from './typo.js';
 
@@ -285,7 +285,7 @@ export class Action {
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdFlag(p, w || ''), true;
     }
-    if (/^auto\b|\bauto ?farbe\b|\bmein auto\b/.test(t)) {
+    if (CARS_ON && /^auto\b|\bauto ?farbe\b|\bmein auto\b/.test(t)) {
       const w = words.find((x) => CAR_COLORS[x]) || words.map((x) => (x.length >= 3 && !/auto|farbe|mein/.test(x) ? closest(x, Object.keys(CAR_COLORS)) : null)).find(Boolean);
       this.log(`[Befehl] @${p.name}: ${text}`);
       return this.cmdCar(p, w || ''), true;
@@ -712,7 +712,7 @@ export class Action {
     const { x: cx, z: cz } = plotCenter(p.plot);
     // im Vorgarten (Seite zur Kamera) neben dem Weg – dort sieht man es immer
     const fr = frontOf(cx, cz);
-    const x = cx + fr.dx * 5 + (fr.dz ? 3 : 0), z = cz + fr.dz * 5 + (fr.dx ? 3 : 0);
+    const x = cx + fr.dx * 6 + (fr.dz ? 3 : 0), z = cz + fr.dz * 6 + (fr.dx ? 3 : 0); // zwischen Hauswand und Hecke
     const name = JSON.stringify(`${p.name}s ${pet[1]}`);
     p.pet = pet[0];
     this.game.store.save();
@@ -724,7 +724,7 @@ export class Action {
       await this.mc.send(`kill @e[tag=mc_pet_${p.plot}]`);
       // NoAI: das Tier bleibt im Vorgarten stehen und laeuft nicht weg
       const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
-      const r = MODELS[pet[0]] ? await summonModel(this.mc, pet[0], x, z, yaw, p.plot, `${p.name}s ${pet[1]}`) : await this.mc.send(`summon ${pet[0]} ${x} ${BASE} ${z} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
+      const r = MODELS[pet[0]] ? await summonModel(this.mc, pet[0], x, z, yaw, p.plot, `${p.name}s ${pet[1]}`) : await this.mc.send(`summon ${pet[0]} ${x + 0.5} ${BASE} ${z + 0.5} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
       this.log(`[Haustier] ${p.name}: ${pet[0]} -> ${r}`);
       await this.mc.send(`particle minecraft:heart ${x} ${BASE + 1.5} ${z} 0.6 0.4 0.6 0 12 force`);
       await this.mc.send(`particle minecraft:poof ${x} ${BASE + 0.5} ${z} 0.4 0.3 0.4 0.05 20 force`);

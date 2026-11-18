@@ -2,7 +2,7 @@ import fs from 'fs';
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
 import { findBigSite } from './bigbuild.js';
-import { CAR_LIKES, parkedCarCommands } from './carpark.js';
+import { CAR_LIKES, CARS_ON, parkedCarCommands } from './carpark.js';
 import { Board } from './board.js';
 import { COMMUNITY_PROJECTS, COMMUNITY_CELLS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
@@ -166,10 +166,12 @@ export class Game {
 
   /** Auto (neu) in den Vorgarten stellen – laeuft in der Bau-Warteschlange nach dem Hausbau. */
   parkCar(p) {
+    if (!CARS_ON) return;
     this.builder.enqueue({ type: 'fn', fn: () => this.builder.mc.sendAll(parkedCarCommands(p, p.car.color)) });
   }
 
   giveCar(p, quiet = false) {
+    if (!CARS_ON) return;
     if (p.car || p.plot === null) return;
     const colors = ['red', 'blue', 'yellow', 'lime', 'orange', 'light_blue', 'pink', 'purple', 'white', 'black'];
     p.car = { color: colors[Math.floor(Math.random() * colors.length)], at: Date.now() };
@@ -188,6 +190,7 @@ export class Game {
 
   /** Anzeige im Overlay: wer ist am naechsten dran am Auto? */
   carStats() {
+    if (!CARS_ON) return;
     const all = Object.values(this.store.players);
     const owners = all.filter((p) => p.car).length;
     const next = [...this.sessionLikes.keys()].map((id) => this.store.players[id]).filter((p) => p && !p.car && p.likes > 0)

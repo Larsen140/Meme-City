@@ -15,7 +15,6 @@ export const PAGES = [
     line('farbe rot', '  Dach neu streichen'),
     line('haustier drache', '  über 30 Tiere'),
     line('flagge deutschland', '  Fahne im Garten'),
-    line('auto blau', '  Auto umlackieren'),
     line('party', '  Feier bei dir zu Hause'),
     line('nord / süd', '  Team fürs Duell'),
   ]),
@@ -23,7 +22,6 @@ export const PAGES = [
     line('❤ 50 Likes', '  = 1 Punkt', '#FF6FAE'),
     line('★ Geschenke', '  1 Münze = 1 Punkt', '#FFC93C'),
     line('⌚ 5 Minuten dabei', '  = Haus wächst 1 Stufe', '#3DF5B0'),
-    line('▶ 10.000 Likes', '  = eigenes Auto', '#4CC9FF'),
     line('■ Jeder Punkt', '  baut am Gemeinschaftsbau mit', '#FFC93C'),
   ]),
   // Was ein Geschenk in der Stadt bewirkt (Effekte aus giftfx.js)

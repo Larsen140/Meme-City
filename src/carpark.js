@@ -3,6 +3,7 @@ import { plotCenter, frontOf, BASE, HALF } from './city.js';
 import { levelInfo } from './levels.js';
 
 export const CAR_LIKES = 10_000;
+export const CARS_ON = false; // Autos im Vorgarten ausgeschaltet (Larsen, 18.11.2026)
 
 export const CAR_COLORS = {
   rot: 'red', blau: 'blue', hellblau: 'light_blue', türkis: 'cyan', tuerkis: 'cyan', grün: 'lime', gruen: 'lime',

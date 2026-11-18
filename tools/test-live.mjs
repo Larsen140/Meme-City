@@ -21,7 +21,6 @@ const cases = [
   ['haustier pinguin', /Erst ein Haus/],
   ['haustier löwe', /Erst ein Haus/],
   ['party', /Erst ein Haus/],
-  ['auto rot', /Erst ein Haus/],
   ['flagge deutschland', /Erst ein Haus/],
   ['nord', /NORD/],
   ['süd', /SÜD/],

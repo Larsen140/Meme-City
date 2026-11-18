@@ -142,7 +142,7 @@ export class GiftFx {
     } else if (kind === 'dog' || kind === 'panda' || kind === 'cat') {
       const [mob, label] = { dog: ['wolf', 'Hund'], panda: ['panda', 'Panda'], cat: ['cat', 'Katze'] }[kind];
       // im Vorgarten auf der anderen Wegseite als das Chat-Haustier, bleibt stehen
-      const px = x + fr.dx * 5 - (fr.dz ? 3 : 0), pz = z + fr.dz * 5 - (fr.dx ? 3 : 0);
+      const px = x + fr.dx * 6 - (fr.dz ? 3 : 0) + 0.5, pz = z + fr.dz * 6 - (fr.dx ? 3 : 0) + 0.5; // zwischen Hauswand und Hecke
       const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
       if (big) await this.builder.petCamera(px, pz, fr);
       await mc.send(`kill @e[tag=mc_gift_pet_${p.plot}]`);
