@@ -51,6 +51,9 @@ export class Action {
     this.goalTarget = config.firstLikeGoal ?? 300;
     this.goalEvent = EVENTS[0];
     this.eventIndex = 0;
+    // Stand des Like-Ziels ueber Neustarts retten (wenn juenger als 2 Stunden)
+    const saved = game.store.data.likeGoal;
+    if (saved && Date.now() - saved.at < 2 * 3600_000) Object.assign(this, { sessionLikes: saved.sessionLikes, goalStart: saved.goalStart, goalTarget: saved.goalTarget, eventIndex: saved.eventIndex, goalEvent: EVENTS[saved.eventIndex % EVENTS.length] });
 
     // Duell
     this.duel = null;
@@ -142,6 +145,8 @@ export class Action {
   // ---------- 1. Like-Ziele ----------
 
   pushGoal() {
+    this.game.store.data.likeGoal = { at: Date.now(), sessionLikes: this.sessionLikes, goalStart: this.goalStart, goalTarget: this.goalTarget, eventIndex: this.eventIndex };
+    this.game.store.save();
     if (this.duel || this.raffle) return;
     const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
     const now = Date.now();
