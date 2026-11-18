@@ -87,7 +87,11 @@ export class Builder {
             await this.camera(Math.cos(a) * r, BASE + 36, Math.sin(a) * r, 0, BASE + 2, 0, 6, true);
           }
         } else if (kind === 1 || kind === 4) {
-          // ein Haus aus der Naehe zeigen
+          // seitlicher Schwenk ueber die Daecher (keine Hausbesuche, damit nichts wie ein wiederholter Befehl aussieht)
+          const s = Math.random() < 0.5 ? 1 : -1;
+          await this.camera(s * 60, BASE + 24, 30, 0, BASE + 4, -10, 6, true);
+          await this.camera(-s * 60, BASE + 24, 30, 0, BASE + 4, -10, 8, true);
+        } else if (false) {
           const houses = this.housesProvider?.() || [];
           if (houses.length) {
             const p = houses[Math.floor(Math.random() * houses.length)];
@@ -283,6 +287,8 @@ export class Builder {
       await this.nameTag(player, plan.top);
       await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
       player.builtLevel = level;
+      player.top = plan.top;
+      this.onEvent({ type: 'buildDone', player, level, instant: true }); // speichert den Stand
       return;
     }
 

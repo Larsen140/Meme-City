@@ -136,6 +136,10 @@ server.listen(config.webPort || 3000, async () => {
   }
   // Kran-/Geruestreste von unterbrochenen Bauten wegraeumen
   builder.enqueue({ type: 'fn', fn: () => builder.cleanupScaffolds(Object.values(store.players)) });
+  // Haeuser, deren Bau unterbrochen wurde (oder nie startete), fertig bauen
+  for (const p of Object.values(store.players)) {
+    if (p.plot !== null && (p.builtLevel || 0) < p.level) builder.enqueue({ type: 'build', player: p, instant: true });
+  }
   game.ensureFreePlots();
   const life = new CityLife(mc, { people: config.people ?? 40 }, log);
   life.start(store);
