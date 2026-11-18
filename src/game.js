@@ -197,7 +197,20 @@ export class Game {
   addCommunity(up) {
     const c = this.store.data.community;
     if (!COMMUNITY_PROJECTS[c.index]) return;
+    const before = COMMUNITY_PROJECTS[c.index] ? c.progress / COMMUNITY_PROJECTS[c.index].goal : 0;
     c.progress += up;
+    // Zwischenstaende feiern
+    const cur = COMMUNITY_PROJECTS[c.index];
+    if (cur && c.progress < cur.goal) {
+      const now = c.progress / cur.goal;
+      for (const m of [0.25, 0.5, 0.75, 0.9]) {
+        if (before < m && now >= m) {
+          const pct = Math.round(m * 100);
+          this.speech.say(pct === 90 ? `Fast geschafft! Das ${cur.name} ist zu neunzig Prozent fertig!` : `${pct} Prozent geschafft! Das ${cur.name} wächst!`, true);
+          this.broadcast({ type: 'banner', title: `🏗️ ${cur.name.toUpperCase()}: ${pct} %`, text: `${fmt(c.progress)} / ${fmt(cur.goal)} Punkte`, big: pct >= 75 });
+        }
+      }
+    }
     let proj;
     while ((proj = COMMUNITY_PROJECTS[c.index]) && c.progress >= proj.goal) {
       c.progress -= proj.goal;
@@ -345,7 +358,22 @@ export class Game {
       'Schaut mal, wie die Autos durch die Straßen fahren. Hier ist richtig was los!',
     ];
     if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Respekt!`);
-    if (s.community) lines.push(`Der Gemeinschaftsbau ${s.community.name} steht bei ${fmt(s.community.progress)} von ${fmt(s.community.goal)}.`);
+    if (s.community) {
+      // Der Gemeinschaftsbau ist das gemeinsame Ziel – darueber redet der Buergermeister am liebsten
+      const c = s.community, pct = Math.floor((100 * c.progress) / c.goal), rest = c.goal - c.progress;
+      const next = COMMUNITY_PROJECTS[this.store.data.community.index + 1]?.name;
+      const commLines = [
+        `Unser Gemeinschaftsbau: ${c.name}! Wir stehen bei ${pct} Prozent.`,
+        `Noch ${fmt(rest)} Punkte, dann bekommt Meme City ein ${c.name}! Das schaffen wir zusammen.`,
+        `Jeder Punkt, den ihr für euer Haus sammelt, zählt auch für das ${c.name} mit.`,
+        `Stellt euch vor: Mitten auf dem Stadtplatz steht bald ein ${c.name}. ${fmt(c.progress)} von ${fmt(c.goal)} haben wir schon!`,
+        `Wer hat Lust auf ein ${c.name}? Wir sind schon bei ${pct} Prozent!`,
+      ];
+      if (next) commLines.push(`Nach dem ${c.name} kommt als nächstes ein ${next}. Ich bin schon gespannt!`);
+      // doppelt so oft wie andere Saetze
+      lines.push(...commLines, ...commLines);
+      this.broadcast({ type: 'ticker', text: `🏗️ Gemeinschaftsbau ${c.name}: ${fmt(c.progress)} / ${fmt(c.goal)} (${pct} %)`, highlight: true });
+    }
     this.speech.say(pick(lines));
     this.broadcast({ type: 'ticker', text: pick([
       'Schreib „Haus“ in den Chat und zieh nach Meme City!',
