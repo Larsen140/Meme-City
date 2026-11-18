@@ -33,6 +33,7 @@ export const FLAGS = {
   england: ['England', { bg: 'white', cross: 'red' }],
   türkei: ['Türkei', { bg: 'red', dot: 'white' }], tuerkei: ['Türkei', { bg: 'red', dot: 'white' }],
   albanien: ['Albanien', { bg: 'red', dot: 'black' }],
+  irak: ['Irak', { ...h('red', 'white', 'black'), dot: 'green', dotSize: 0.24 }], iraq: ['Irak', { ...h('red', 'white', 'black'), dot: 'green', dotSize: 0.24 }],
   japan: ['Japan', { bg: 'white', dot: 'red' }],
   brasilien: ['Brasilien', { bg: 'green', dot: 'yellow' }],
   marokko: ['Marokko', { bg: 'red', dot: 'green' }],
@@ -62,7 +63,7 @@ function rects(def) {
     r.push([def.cross, cx - b / 2, 0, cx + b / 2, H, T + 0.02]);
     r.push([def.cross, 0, H / 2 - b / 2, W, H / 2 + b / 2, T + 0.02]);
   }
-  if (def.dot) { const s = 0.42; r.push([def.dot, W / 2 - s / 2, H / 2 - s / 2, W / 2 + s / 2, H / 2 + s / 2, T + 0.02]); }
+  if (def.dot) { const s = def.dotSize ?? 0.42; r.push([def.dot, W / 2 - s / 2, H / 2 - s / 2, W / 2 + s / 2, H / 2 + s / 2, T + 0.02]); }
   return r;
 }
 
