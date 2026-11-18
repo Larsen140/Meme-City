@@ -2,11 +2,12 @@
 // Alles laeuft nacheinander in einer Warteschlange, damit sich nichts ueberschneidet.
 import {
   BASE, HALF, plotCenter, housePlan, gardenCommands, roadCommands, scaffoldCommands,
-  removeScaffoldCommands, clearPlotCommands, lampCommands, freePlotDecoration, communityPlan, plazaCommands, COMMUNITY_CELLS,
+  removeScaffoldCommands, clearPlotCommands, lampCommands, freePlotDecoration, communityPlan, plazaCommands, COMMUNITY_CELLS, frontOf,
 } from './city.js';
 import { levelInfo } from './levels.js';
 import { snbtString, sleep } from './minecraft.js';
 
+const CAM_STEP_TICKS = 2; // alle 2 Ticks (0,1 s) ein Kameraschritt
 const COLORS = [0xff4d4d, 0xffd84d, 0x4dff88, 0x4dc3ff, 0xc34dff, 0xff8a00, 0xffffff];
 
 export class Builder {
@@ -50,13 +51,50 @@ export class Builder {
 
   // ---------- Kamera ----------
 
-  async camera(x, y, z, lx, ly, lz) {
+  // Die Kamera ist eine unsichtbare Figur ("item_display"), an die der Spieler im
+  // Zuschauermodus angehaengt wird. Sie wird in kleinen Schritten bewegt; Minecraft
+  // gleitet weich dazwischen (teleport_duration) – so entsteht ein echter Kameraflug.
+
+  async ensureCamera() {
     const p = this.cameraName;
+    if (!this.cam) {
+      this.cam = { x: 0, y: BASE + 55, z: 70, yaw: 180, pitch: 38 };
+      await this.mc.send('kill @e[tag=mc_cam]');
+      await this.mc.send(`summon item_display ${this.cam.x} ${this.cam.y} ${this.cam.z} {Tags:["mc_cam"],teleport_duration:${CAM_STEP_TICKS + 1},Rotation:[180f,38f]}`);
+    }
     await this.mc.send(`gamemode spectator ${p}`);
-    await this.mc.send(`tp ${p} ${x} ${y} ${z} facing ${lx} ${ly} ${lz}`);
+    await this.mc.send(`spectate @e[tag=mc_cam,limit=1] ${p}`);
   }
 
-  async cameraAtPlot(cx, cz, height) {
+  /** Fliegt die Kamera weich nach (x, y, z) mit Blick auf (lx, ly, lz). */
+  async camera(x, y, z, lx, ly, lz, seconds) {
+    [x, y, z, lx, ly, lz] = [x, y, z, lx, ly, lz].map(Number);
+    await this.ensureCamera();
+    const from = { ...this.cam };
+    const dx = lx - x, dy = ly - y, dz = lz - z;
+    const to = { x, y, z, yaw: (Math.atan2(-dx, dz) * 180) / Math.PI, pitch: (-Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI };
+    let dYaw = ((to.yaw - from.yaw + 540) % 360) - 180; // kuerzester Drehweg
+    const dist = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
+    const dur = seconds ?? Math.min(4.5, Math.max(1.2, dist / 28 + Math.abs(dYaw) / 160));
+    const steps = Math.max(1, Math.round((dur * 20) / CAM_STEP_TICKS));
+    const arc = Math.min(25, dist * 0.18); // bei weiten Fluegen leicht nach oben ausholen
+    const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    for (let i = 1; i <= steps; i++) {
+      const t = ease(i / steps);
+      const c = {
+        x: from.x + (to.x - from.x) * t,
+        y: from.y + (to.y - from.y) * t + Math.sin(Math.PI * (i / steps)) * arc,
+        z: from.z + (to.z - from.z) * t,
+        yaw: from.yaw + dYaw * t,
+        pitch: from.pitch + (to.pitch - from.pitch) * t,
+      };
+      await this.mc.send(`tp @e[tag=mc_cam,limit=1] ${c.x.toFixed(2)} ${c.y.toFixed(2)} ${c.z.toFixed(2)} ${c.yaw.toFixed(1)} ${c.pitch.toFixed(1)}`);
+      await sleep(CAM_STEP_TICKS * 50);
+    }
+    this.cam = { ...to, yaw: from.yaw + dYaw };
+  }
+
+  async cameraAtPlot(cx, cz, height, inward = false) {
     // Kamera schaut immer von aussen (weg vom Stadtplatz) auf das Haus, etwas von oben,
     // so dass Haus und Namensschild im freien Mittelfeld des Hochformat-Streams liegen.
     // Werte an Bildschirmfotos abgestimmt: kleine Haeuser steiler von oben, Hochhaeuser flacher.
@@ -65,9 +103,11 @@ export class Builder {
     const dist = lerp(1.5 * Math.max(height + 4, 15), height + 4);
     const targetY = BASE + height * lerp(0.25, 0.6);
     const camY = Math.max(BASE + 14, targetY + dist * lerp(0.53, 0.17));
-    const len = Math.hypot(cx, cz) || 1;
-    const x = cx + (cx / len) * dist, z = cz + (cz / len) * dist;
-    await this.camera(x.toFixed(1), camY.toFixed(1), z.toFixed(1), cx, targetY.toFixed(1), cz);
+    // Von vorne (Seite mit der Haustuer), leicht schraeg fuer einen 3D-Eindruck
+    const fr = frontOf(cx, cz), k = inward ? -1 : 1;
+    const side = dist * 0.35;
+    const x = cx + fr.dx * dist * k + (fr.dz ? side : 0), z = cz + fr.dz * dist * k + (fr.dx ? side : 0);
+    await this.camera(x, camY, z, cx, targetY, cz);
   }
 
   async cameraOverview() {
@@ -217,7 +257,7 @@ export class Builder {
   async buildCommunity(index, name) {
     const cell = COMMUNITY_CELLS[index % COMMUNITY_CELLS.length];
     const plan = communityPlan(name, cell.x, cell.z);
-    await this.cameraAtPlot(cell.x, cell.z, Math.max(plan.top - BASE, 12));
+    await this.cameraAtPlot(cell.x, cell.z, Math.max(plan.top - BASE, 12), true);
     await sleep(800);
     await this.mc.sendAll(clearPlotCommands(cell.x, cell.z).map((c) => c.replace('grass_block', 'smooth_stone')));
     for (const l of plan.layers) {

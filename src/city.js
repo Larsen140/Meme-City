@@ -88,6 +88,15 @@ function battlements(p, x1, z1, x2, z2, y, block) {
 // ---------- Haus ----------
 
 /**
+ * Vorderseite eines Grundstuecks: zeigt immer vom Stadtplatz weg (dort kommt die Kamera her).
+ * Gibt Richtung (dx, dz) und den Minecraft-Namen ("north" usw.) zurueck.
+ */
+export function frontOf(cx, cz) {
+  if (Math.abs(cz) >= Math.abs(cx)) return cz < 0 ? { dx: 0, dz: -1, facing: 'north' } : { dx: 0, dz: 1, facing: 'south' };
+  return cx < 0 ? { dx: -1, dz: 0, facing: 'west' } : { dx: 1, dz: 0, facing: 'east' };
+}
+
+/**
  * Bauplan fuer ein Haus einer bestimmten Stufe (oder eines eigenen Stils).
  * Gibt Schichten, Hoehe und die Hausflaeche zurueck.
  */
@@ -115,12 +124,13 @@ export function housePlan(cx, cz, levelOrStyle) {
     p.fill(x2, yb + 3, z1, x2, yb + 3, z2, s.corner);
     p.set(cx, yb + 2, cz, 'lantern[hanging=true]');
   }
-  // Tuer vorne (Suedseite)
-  p.set(cx, BASE + 1, z2, 'air');
-  p.add(BASE + 1, `setblock ${cx} ${BASE} ${z2} oak_door[half=lower,facing=south]`);
-  p.add(BASE + 1, `setblock ${cx} ${BASE + 1} ${z2} oak_door[half=upper,facing=south]`);
-  p.set(cx, BASE + 2, z2 + 1, 'lantern[hanging=true]');
-  p.set(cx, BASE + 3, z2 + 1, 'oak_slab[type=top]');
+  // Tuer auf der Vorderseite (zur Kamera hin)
+  const fr = s.front || frontOf(cx, cz);
+  const dxw = fr.dx > 0 ? x2 : fr.dx < 0 ? x1 : cx, dzw = fr.dz > 0 ? z2 : fr.dz < 0 ? z1 : cz;
+  p.add(BASE + 1, `setblock ${dxw} ${BASE} ${dzw} oak_door[half=lower,facing=${fr.facing}]`);
+  p.add(BASE + 1, `setblock ${dxw} ${BASE + 1} ${dzw} oak_door[half=upper,facing=${fr.facing}]`);
+  p.set(dxw + fr.dx, BASE + 2, dzw + fr.dz, 'lantern[hanging=true]');
+  p.set(dxw + fr.dx, BASE + 3, dzw + fr.dz, 'oak_slab[type=top]');
 
   const roofY = BASE + s.floors * 4;
   if (s.roofType === 'pyramid') {
@@ -155,7 +165,7 @@ export function housePlan(cx, cz, levelOrStyle) {
     p.set(cx, roofY + 4, cz, 'gold_block');
   }
 
-  return { layers: p.layers(), top: p.top, x1, z1, x2, z2 };
+  return { layers: p.layers(), top: p.top, x1, z1, x2, z2, door: { x: dxw, z: dzw }, front: fr };
 }
 
 /** Garten: Hecke, Weg, Blumen, Laternen. Gibt Befehle zurueck. */
@@ -167,15 +177,18 @@ export function gardenCommands(cx, cz, house) {
   c.push(`fill ${a} ${BASE} ${f} ${b} ${BASE} ${f} ${hedge}`);
   c.push(`fill ${a} ${BASE} ${e} ${a} ${BASE} ${f} ${hedge}`);
   c.push(`fill ${b} ${BASE} ${e} ${b} ${BASE} ${f} ${hedge}`);
-  // Weg von der Tuer zur Strasse
-  c.push(`fill ${cx} ${GROUND} ${house.z2 + 1} ${cx} ${GROUND} ${f} dirt_path`);
-  c.push(`fill ${cx - 1} ${BASE} ${f} ${cx + 1} ${BASE} ${f} air`);
+  // Weg von der Tuer zur Strasse (auf der Vorderseite)
+  const fr = house.front || frontOf(cx, cz);
+  const ex = cx + fr.dx * HALF, ez = cz + fr.dz * HALF; // Eingang in der Hecke
+  const px = fr.dx ? 0 : 1, pz = fr.dz ? 0 : 1;         // quer zur Laufrichtung
+  c.push(`fill ${house.door.x + fr.dx} ${GROUND} ${house.door.z + fr.dz} ${ex} ${GROUND} ${ez} dirt_path`);
+  c.push(`fill ${ex - px} ${BASE} ${ez - pz} ${ex + px} ${BASE} ${ez + pz} air`);
   // Strassenlaternen an den Ecken
   c.push(...lampCommands(cx, cz));
   // Laternen am Eingang
-  for (const x of [cx - 2, cx + 2]) {
-    c.push(`setblock ${x} ${BASE} ${f} oak_fence`);
-    c.push(`setblock ${x} ${BASE + 1} ${f} lantern`);
+  for (const k of [-2, 2]) {
+    c.push(`setblock ${ex + px * k} ${BASE} ${ez + pz * k} oak_fence`);
+    c.push(`setblock ${ex + px * k} ${BASE + 1} ${ez + pz * k} lantern`);
   }
   // Blumen (feste Auswahl je Grundstueck, damit es nicht jedes Mal anders aussieht)
   const flowers = ['poppy', 'dandelion', 'blue_orchid', 'allium', 'azure_bluet', 'red_tulip', 'orange_tulip', 'oxeye_daisy', 'cornflower', 'lily_of_the_valley'];
@@ -185,7 +198,7 @@ export function gardenCommands(cx, cz, house) {
     const x = a + 1 + Math.floor(rnd() * (b - a - 1));
     const z = e + 1 + Math.floor(rnd() * (f - e - 1));
     const insideHouse = x >= house.x1 - 2 && x <= house.x2 + 2 && z >= house.z1 - 2 && z <= house.z2 + 2;
-    if (insideHouse || x === cx) continue;
+    if (insideHouse || (fr.dx ? z === cz : x === cx)) continue;
     c.push(`setblock ${x} ${BASE} ${z} ${flowers[Math.floor(rnd() * flowers.length)]} keep`);
   }
   return c;
@@ -260,7 +273,9 @@ export const COMMUNITY_PROJECTS = [
 
 /** Bauplan fuer einen Gemeinschaftsbau (gleiche Form wie housePlan). */
 export function communityPlan(name, cx, cz) {
-  const style = (o) => housePlan(cx, cz, { w: 11, d: 11, floors: 2, roofType: 'pyramid', window: 'glass', ...o });
+  // Gemeinschaftsbauten schauen zum Brunnen in der Mitte
+  const o0 = frontOf(cx, cz), inward = { dx: -o0.dx, dz: -o0.dz, facing: { north: 'south', south: 'north', east: 'west', west: 'east' }[o0.facing] };
+  const style = (o) => housePlan(cx, cz, { w: 11, d: 11, floors: 2, roofType: 'pyramid', window: 'glass', front: inward, ...o });
   switch (name) {
     case 'Rathaus': return style({ floors: 3, wall: 'quartz_bricks', corner: 'quartz_pillar', roof: 'green_terracotta', window: 'glass' });
     case 'Bar': return style({ floors: 1, wall: 'dark_oak_planks', corner: 'stripped_dark_oak_log', roof: 'red_concrete', roofType: 'flat', window: 'orange_stained_glass' });
