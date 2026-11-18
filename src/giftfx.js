@@ -9,6 +9,29 @@ const T = (tx, ty, tz, sx, sy, sz) =>
 
 // Bekannte Geschenke (englische und deutsche Namen) -> Effekt
 const GIFTS = [
+  // eigene Effekte fuer viele beliebte Geschenke (spezielle zuerst)
+  [/corgi|\bdog\b|hund|puppy|welpe/i, 'dog'],
+  [/panda/i, 'panda'],
+  [/\bcat\b|kitty|katze/i, 'cat'],
+  [/money|geld|dollar|cash/i, 'money'],
+  [/diamond|diamant/i, 'diamond'],
+  [/train|\bzug\b|\blok\b/i, 'train'],
+  [/sports car|\bcar\b|\bauto\b|motorcycle|motorrad/i, 'car'],
+  [/\bjet\b|plane|flugzeug/i, 'plane'],
+  [/sunglasses|sonnenbrille|disco/i, 'disco'],
+  [/swan|schwan|\bbird|vogel|dove|taube/i, 'birds'],
+  [/butterfly|schmetterling/i, 'butterfly'],
+  [/confetti|konfetti/i, 'confetti'],
+  [/firework|feuerwerk/i, 'rocket'],
+  [/\bfire\b|feuer|flame/i, 'fire'],
+  [/cake|kuchen|birthday/i, 'cake'],
+  [/\bhat\b|top hat|\bhut\b|\bcap\b|mütze|mustache/i, 'hat'],
+  [/\bmic\b|microphone|mikro/i, 'mic'],
+  [/rainbow|regenbogen/i, 'rainbow'],
+  [/crown|krone/i, 'minicrown'],
+  [/whale|\bwal\b|dolphin|delfin/i, 'whale'],
+  [/dragon|drache/i, 'dragon'],
+  [/snow|schnee/i, 'snow'],
   [/rose/i, 'rose'],
   [/^tiktok$|^gg$|ice cream|eis/i, 'sparkle'],
   [/finger heart|fingerherz|heart me|hand heart|herz/i, 'heart'],
@@ -48,7 +71,7 @@ export class GiftFx {
   describe(gift, coins) {
     const kind = GIFTS.find(([re]) => re.test(gift.name || ''))?.[1]
       || (coins >= 1000 ? 'mega' : coins >= 100 ? 'heart' : coins >= 30 ? 'donut' : coins >= 5 ? 'sparkle' : 'rose');
-    const text = { rose: 'Blume im Garten 🌹', sparkle: 'Funkeln am Haus ✨', heart: 'Riesen-Herz überm Haus ❤️', donut: 'Riesen-Donut 🍩',
+    const text = { dog: 'Hund im Garten 🐶', panda: 'Panda im Garten 🐼', cat: 'Katze im Garten 🐱', money: 'Goldregen 💰', diamond: 'Diamantregen 💎', train: 'Zug fährt vorbei 🚂', car: 'Goldauto 🚗', plane: 'Flugzeug 🛩️', disco: 'Disco 🪩', birds: 'Vögel 🕊️', butterfly: 'Schmetterlinge 🦋', confetti: 'Konfetti 🎊', fire: 'Feuerzauber 🔥', cake: 'Torte 🎂', hat: 'Riesenhut 🎩', mic: 'Musik 🎤', rainbow: 'Regenbogen 🌈', minicrown: 'Goldglanz 👑', whale: 'Wasserfontäne 🐳', dragon: 'Drachenatem 🐉', snow: 'Schneemann ⛄', rose: 'Blume im Garten 🌹', sparkle: 'Funkeln am Haus ✨', heart: 'Riesen-Herz überm Haus ❤️', donut: 'Riesen-Donut 🍩',
       perfume: 'Blütenregen 🌸', rocket: 'Raketen vom Dach 🚀', galaxy: 'Sternennacht 🌌', mega: 'PARTY in Meme City 🎉' }[kind];
     return coins >= 1000 ? `${text} + Denkmal 🗿` : text;
   }
@@ -118,11 +141,158 @@ export class GiftFx {
       }
       await this.builder.fireworkShow(x, z, 6, 6);
       setTimeout(() => mc.send('time set noon'), 9000);
+    } else if (kind === 'dog' || kind === 'panda' || kind === 'cat') {
+      const [mob, label] = { dog: ['wolf', 'Hund'], panda: ['panda', 'Panda'], cat: ['cat', 'Katze'] }[kind];
+      await mc.send(`summon ${mob} ${x + 3} ${BASE} ${z + 3} {Tags:["mc_pet","mc_gift_pet_${p.plot}"],PersistenceRequired:1b,CustomName:${JSON.stringify(p.name + 's ' + label)},CustomNameVisible:1b}`);
+      await mc.send(`particle minecraft:heart ${x + 3} ${BASE + 1.5} ${z + 3} 1 0.6 1 0 20 force`);
+      await mc.send(`particle minecraft:poof ${x + 3} ${BASE + 0.5} ${z + 3} 0.5 0.3 0.5 0.05 30 force`);
+      await mc.send(`playsound minecraft:entity.${mob}.ambient master @a ${x} ${BASE} ${z} 2 1`);
+    } else if (kind === 'money' || kind === 'diamond') {
+      const item = kind === 'money' ? 'gold_ingot' : 'diamond';
+      for (let i = 0; i < 12; i++) {
+        await mc.send(`particle minecraft:item{item:"minecraft:${item}"} ${x} ${y + 6} ${z} 3 0.5 3 0.05 25 force`);
+        if (i % 3 === 0) await mc.send(`playsound minecraft:entity.experience_orb.pickup master @a ${x} ${BASE} ${z} 1.5 ${1 + i * 0.05}`);
+        await sleep(200);
+      }
+    } else if (kind === 'train' || kind === 'car') {
+      await this.vehicle(x, z, fr, kind);
+    } else if (kind === 'plane') {
+      await this.plane(x, top, z, fr);
+    } else if (kind === 'disco') {
+      const cols = ['1.0,0.2,0.2', '0.2,1.0,0.3', '0.3,0.4,1.0', '1.0,0.9,0.2', '1.0,0.3,1.0', '0.2,1.0,1.0'];
+      for (let i = 0; i < 16; i++) {
+        await mc.send(`particle minecraft:dust{color:[${cols[i % cols.length]}],scale:2.5} ${x} ${y} ${z} 4 2.5 4 0 70 force`);
+        if (i % 2 === 0) await mc.send(`playsound minecraft:block.note_block.bass master @a ${x} ${BASE} ${z} 1.5 ${[0.6, 0.8, 1, 0.8][i % 4]}`);
+        await sleep(220);
+      }
+    } else if (kind === 'birds') {
+      const tag = `mc_gift_birds_${Date.now()}`;
+      for (let i = 0; i < 4; i++) await mc.send(`summon parrot ${x + i - 2} ${y + 2} ${z} {Tags:["${tag}"],Variant:${i % 5},PersistenceRequired:1b}`);
+      await mc.send(`particle minecraft:cloud ${x} ${y + 2} ${z} 2 1 2 0.02 40 force`);
+      await mc.send(`playsound minecraft:entity.parrot.fly master @a ${x} ${BASE} ${z} 2 1`);
+      setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 30_000);
+    } else if (kind === 'butterfly' || kind === 'confetti') {
+      const cols = ['1.0,0.4,0.7', '0.4,0.8,1.0', '1.0,0.85,0.2', '0.6,1.0,0.4', '0.8,0.5,1.0'];
+      for (let i = 0; i < 10; i++) {
+        for (const c of cols) await mc.send(`particle minecraft:dust{color:[${c}],scale:${kind === 'butterfly' ? 1.4 : 1.8}} ${x} ${y + 3} ${z} 4 2 4 0 ${kind === 'butterfly' ? 12 : 30} force`);
+        await sleep(200);
+      }
+      await mc.send(`playsound minecraft:block.amethyst_block.chime master @a ${x} ${BASE} ${z} 2 1.3`);
+    } else if (kind === 'fire') {
+      for (let i = 0; i < 10; i++) {
+        await mc.send(`particle minecraft:flame ${x} ${top + 1} ${z} 2 1.5 2 0.04 60 force`);
+        await mc.send(`particle minecraft:lava ${x} ${top + 1} ${z} 2 0.5 2 0 6 force`);
+        await sleep(200);
+      }
+      await mc.send(`playsound minecraft:item.firecharge.use master @a ${x} ${BASE} ${z} 2 0.9`);
+    } else if (kind === 'cake') {
+      const fx = x + (fr.dz ? 3 : 0) + fr.dx * 4, fz = z + (fr.dx ? 3 : 0) + fr.dz * 4;
+      await mc.send(`setblock ${fx} ${BASE} ${fz} candle_cake[lit=true]`);
+      await mc.send(`particle minecraft:wax_on ${fx} ${BASE + 1} ${fz} 0.5 0.5 0.5 0.2 40 force`);
+      await this.builder.fireworkShow(x, z, 3, 4);
+      await mc.send(`playsound minecraft:entity.player.levelup master @a ${x} ${BASE} ${z} 2 1.5`);
+    } else if (kind === 'hat') {
+      const tag = `mc_gift_hat_${Date.now()}`;
+      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}"],block_state:"minecraft:black_concrete",${T(-2.5, 0, -2.5, 5, 0.6, 5)}}`);
+      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}"],block_state:"minecraft:black_concrete",${T(-1.5, 0.6, -1.5, 3, 3.5, 3)}}`);
+      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}"],block_state:"minecraft:red_concrete",${T(-1.55, 0.7, -1.55, 3.1, 0.6, 3.1)}}`);
+      await mc.send(`particle minecraft:poof ${x} ${top + 3} ${z} 2 1 2 0.05 40 force`);
+      await mc.send(`playsound minecraft:entity.villager.celebrate master @a ${x} ${BASE} ${z} 2 1`);
+      setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 30_000);
+    } else if (kind === 'mic') {
+      for (let i = 0; i < 8; i++) {
+        await mc.send(`particle minecraft:note ${x} ${y + 2} ${z} 3 2 3 1 20 force`);
+        await mc.send(`playsound minecraft:block.note_block.pling master @a ${x} ${BASE} ${z} 1.5 ${[0.8, 1, 1.2, 1.5][i % 4]}`);
+        await sleep(250);
+      }
+    } else if (kind === 'rainbow') {
+      const cols = ['red', 'orange', 'yellow', 'lime', 'light_blue', 'purple'], tag = `mc_gift_rb_${Date.now()}`;
+      for (let k = 0; k < cols.length; k++) {
+        const r = 9 - k * 0.7;
+        for (let a = 0; a <= 180; a += 12) {
+          const rad = (a * Math.PI) / 180, ox = Math.cos(rad) * r, oy = Math.sin(rad) * r;
+          const px = fr.dx ? x : x + ox, pz = fr.dx ? z + ox : z;
+          await mc.send(`summon block_display ${px.toFixed(2)} ${(top + oy).toFixed(2)} ${pz.toFixed(2)} {Tags:["${tag}"],brightness:{sky:15,block:15},block_state:"minecraft:${cols[k]}_stained_glass",${T(-0.4, -0.4, -0.4, 0.8, 0.8, 0.8)}}`);
+        }
+      }
+      await mc.send(`playsound minecraft:block.amethyst_block.chime master @a ${x} ${BASE} ${z} 2 1`);
+      setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 25_000);
+    } else if (kind === 'minicrown') {
+      await mc.send(`particle minecraft:totem_of_undying ${x} ${y + 2} ${z} 2 2 2 0.5 200 force`);
+      await mc.send(`particle minecraft:item{item:"minecraft:gold_ingot"} ${x} ${y + 4} ${z} 2 0.5 2 0.05 40 force`);
+      await mc.send(`playsound minecraft:ui.toast.challenge_complete master @a ${x} ${BASE} ${z} 2 1`);
+    } else if (kind === 'whale') {
+      for (let i = 0; i < 8; i++) {
+        await mc.send(`particle minecraft:splash ${x} ${y + 3} ${z} 3 2 3 0.5 200 force`);
+        await mc.send(`particle minecraft:bubble_pop ${x} ${y + 1} ${z} 3 1 3 0.1 60 force`);
+        await sleep(200);
+      }
+      await mc.send(`playsound minecraft:entity.generic.splash master @a ${x} ${BASE} ${z} 2 0.6`);
+    } else if (kind === 'dragon') {
+      for (let i = 0; i < 10; i++) {
+        await mc.send(`particle minecraft:dragon_breath ${x} ${y + 2} ${z} 3 2 3 0.05 120 force`);
+        await sleep(200);
+      }
+      await mc.send(`playsound minecraft:entity.ender_dragon.growl master @a ${x} ${BASE} ${z} 1.5 1`);
+      await this.builder.fireworkShow(x, z, 4, 5);
+    } else if (kind === 'snow') {
+      const tag = `mc_gift_snow_${Date.now()}`;
+      // Schneemann aus Bloecken (echte Schneegolems schmelzen in dieser Welt)
+      for (const [b, tr] of [['snow_block', T(-0.6, 0, -0.6, 1.2, 1.2, 1.2)], ['snow_block', T(-0.45, 1.2, -0.45, 0.9, 0.9, 0.9)], ['carved_pumpkin', T(-0.35, 2.1, -0.35, 0.7, 0.7, 0.7)]]) {
+        await mc.send(`summon block_display ${x + 3} ${BASE} ${z + 3} {Tags:["${tag}"],block_state:"minecraft:${b}",${tr}}`);
+      }
+      for (let i = 0; i < 10; i++) { await mc.send(`particle minecraft:snowflake ${x} ${y + 4} ${z} 4 2 4 0.02 120 force`); await sleep(200); }
+      setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 40_000);
     } else if (kind === 'mega') {
       await this.heartShape(x, y + 4, z, fr, 4);
       await this.builder.fireworkShow(x, z, 10, 8);
       await this.game.bigEvent(p);
     }
+  }
+
+  /** Zug oder goldenes Auto faehrt auf der Strasse vor dem Haus vorbei. */
+  async vehicle(x, z, fr, kind) {
+    const mc = this.mc, tag = `mc_gift_veh_${Date.now()}`;
+    const rx = x + fr.dx * 10 + 0.5, rz = z + fr.dz * 10 + 0.5;   // Strasse vor dem Haus
+    const along = fr.dx ? { x: 0, z: 1 } : { x: 1, z: 0 };       // Fahrtrichtung quer dazu
+    const yaw = fr.dx ? 0 : -90;
+    const parts = kind === 'train'
+      ? [[0, 'red_concrete', 1.6, 1.6, 3, 0.2], [0, 'black_concrete', 1.2, 0.8, 0.8, 1.8], [-3.6, 'blue_concrete', 1.6, 1.4, 3, 0.2], [-7.2, 'yellow_concrete', 1.6, 1.4, 3, 0.2], [-10.8, 'lime_concrete', 1.6, 1.4, 3, 0.2]]
+      : [[0, 'gold_block', 1.7, 0.7, 3.4, 0.2], [0, 'light_blue_stained_glass', 1.4, 0.6, 1.6, 0.9]];
+    const sx = rx - along.x * 22, sz = rz - along.z * 22;
+    for (const [off, b, w, h, l, ty] of parts) {
+      const ox = sx + along.x * off, oz = sz + along.z * off;
+      await mc.send(`summon block_display ${ox.toFixed(2)} ${BASE} ${oz.toFixed(2)} {Tags:["${tag}"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${T(-w / 2, ty, -l / 2, w, h, l)}}`);
+    }
+    await mc.send(`playsound minecraft:entity.minecart.riding master @a ${rx} ${BASE} ${rz} 2 ${kind === 'train' ? 0.7 : 1.4}`);
+    await sleep(150);
+    for (let k = 0; k < 2; k++) {
+      await mc.send(`execute as @e[tag=${tag}] at @s run tp @s ~${along.x * 22} ~ ~${along.z * 22}`);
+      if (kind === 'train') await mc.send(`particle minecraft:large_smoke ${(rx + along.x * (k * 22 - 11)).toFixed(1)} ${BASE + 4} ${(rz + along.z * (k * 22 - 11)).toFixed(1)} 0.5 0.5 0.5 0.02 30 force`);
+      await sleep(2600);
+    }
+    await mc.send(`kill @e[tag=${tag}]`);
+  }
+
+  /** Flugzeug fliegt ueber das Haus. */
+  async plane(x, top, z, fr) {
+    const mc = this.mc, tag = `mc_gift_plane_${Date.now()}`, y = top + 10;
+    const along = fr.dx ? { x: 0, z: 1 } : { x: 1, z: 0 };
+    const yaw = fr.dx ? 0 : -90;
+    const sx = x - along.x * 40, sz = z - along.z * 40;
+    const parts = [
+      ['white_concrete', T(-0.8, 0, -4, 1.6, 1.6, 8)], ['white_concrete', T(-6, 0.6, -0.8, 12, 0.3, 1.8)],
+      ['white_concrete', T(-2.5, 0.6, -4, 5, 0.3, 1)], ['red_concrete', T(-0.15, 1.6, -4, 0.3, 1.8, 1.2)],
+      ['light_blue_stained_glass', T(-0.6, 1.2, 2.6, 1.2, 0.5, 1)],
+    ];
+    for (const [b, tr] of parts) await mc.send(`summon block_display ${sx} ${y} ${sz} {Tags:["${tag}"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${tr}}`);
+    await mc.send(`playsound minecraft:item.elytra.flying master @a ${x} ${y} ${z} 2 1`);
+    await sleep(150);
+    for (let k = 0; k < 2; k++) {
+      await mc.send(`execute as @e[tag=${tag}] at @s run tp @s ~${along.x * 40} ~ ~${along.z * 40}`);
+      await sleep(2600);
+    }
+    await mc.send(`kill @e[tag=${tag}]`);
   }
 
   /** Grosses Herz aus roten Partikeln, zur Kamera hin ausgerichtet. */
