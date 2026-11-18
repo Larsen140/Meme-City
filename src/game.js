@@ -260,6 +260,7 @@ export class Game {
     const p = this.player(user);
     if (!p) return;
     const coins = (gift.diamonds || 0) * (gift.count || 1);
+    this.log(`[Geschenk] @${p.name}: ${gift.count || 1}x ${gift.name} (${coins} Coins)`);
     this.action?.onGift(p, coins);
     p.coins += coins;
     this.store.data.totals.coins += coins;

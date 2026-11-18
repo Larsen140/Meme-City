@@ -21,7 +21,7 @@ const PETS = {
   axolotl: ['axolotl', 'Axolotl'], biene: ['bee', 'Biene'], lama: ['llama', 'Lama'], esel: ['donkey', 'Esel'],
 };
 
-const EVENTS = ['Meteorregen', 'Feuerwerk-Show', 'Regenbogen', 'Schneesturm', 'Party'];
+const EVENTS = ['Tornado', 'Meteorregen', 'Feuerwerk-Show', 'Regenbogen', 'Tornado', 'Schneesturm', 'Party'];
 
 export class Action {
   constructor({ game, builder, speech, broadcast, config = {}, log = console.log }) {
@@ -90,7 +90,7 @@ export class Action {
   onChat(p, text) {
     const t = text.toLowerCase().trim();
     this.active.set(p.id, Date.now());
-    if (this.raffle && /^(ich|dabei|me|hier|ich bin dabei)/.test(t)) {
+    if (this.raffle && /^(ich|dabei|bin dabei|hier|me)(\s|!|\.|$)/.test(t)) {
       if (!this.raffle.entries.has(p.id)) {
         this.raffle.entries.add(p.id);
         this.broadcast({ type: 'ticker', text: `🎟️ @${p.name} ist bei der Verlosung dabei! (${this.raffle.entries.size} Teilnehmer)` });
@@ -126,6 +126,7 @@ export class Action {
 
   startRaffle() {
     this.raffle = { entries: new Set(), end: Date.now() + 60_000 };
+    this.log('[Verlosung] gestartet');
     this.speech.say('Verlosung! Wer in der nächsten Minute ich in den Chat schreibt, kann ein Gratis-Upgrade fürs Haus gewinnen!', true);
     this.broadcast({ type: 'banner', title: '🎟️ VERLOSUNG!', text: 'Schreib „ich“ in den Chat – Gewinn: 1 Stufe fürs Haus!', big: true });
     const tick = setInterval(() => {
@@ -139,6 +140,7 @@ export class Action {
 
   drawRaffle() {
     const ids = [...this.raffle.entries];
+    this.log(`[Verlosung] ${ids.length} Teilnehmer`);
     this.raffle = null;
     if (!ids.length) {
       this.speech.say('Niemand hat mitgemacht. Schade! In ein paar Minuten gibt es die nächste Verlosung.');
@@ -202,6 +204,36 @@ export class Action {
       }
       await sleep(1500);
       await mc.send('time set noon');
+    } else if (name === 'Tornado') {
+      // Tornado zieht quer durch die Stadt (nur Partikel – nichts geht kaputt)
+      this.speech.say('Achtung! Ein Tornado zieht über Meme City! Haltet euch fest!', true);
+      await b.camera(0, BASE + 20, 100, 0, BASE + 16, 15, 2.5);
+      await mc.send('time set 12500');
+      // naeher an der Kamera: quer vor dem Stadtplatz entlang
+      const dur = 16000, start = Date.now(), from = { x: -70, z: 40 }, to = { x: 70, z: 25 };
+      let step = 0;
+      while (Date.now() - start < dur) {
+        const t = (Date.now() - start) / dur;
+        const cx = from.x + (to.x - from.x) * t + Math.sin(t * 9) * 4, cz = from.z + (to.z - from.z) * t + Math.cos(t * 7) * 4;
+        const cmds = [];
+        for (let h = 0; h <= 40; h += 2) {
+          const r = 0.8 + h * 0.22, a = step * 0.9 + h * 0.35;
+          const px = cx + Math.cos(a) * r * 0.7, pz = cz + Math.sin(a) * r * 0.7;
+          const g = (0.25 + h / 160).toFixed(2);
+          cmds.push(`particle minecraft:dust{color:[${g},${g},${(+g + 0.05).toFixed(2)}],scale:4.0} ${px.toFixed(1)} ${BASE + h} ${pz.toFixed(1)} ${(r * 0.35).toFixed(2)} 0.7 ${(r * 0.35).toFixed(2)} 0 ${8 + Math.floor(h / 5)} force`);
+          if (h % 4 === 0) cmds.push(`particle minecraft:large_smoke ${px.toFixed(1)} ${BASE + h} ${pz.toFixed(1)} ${(r * 0.3).toFixed(2)} 0.5 ${(r * 0.3).toFixed(2)} 0.03 6 force`);
+        }
+        if (step % 2 === 0) {
+          cmds.push(`particle minecraft:block{block_state:"minecraft:dirt"} ${cx.toFixed(1)} ${BASE + 3} ${cz.toFixed(1)} 3 2 3 0 60 force`);
+          cmds.push(`particle minecraft:block{block_state:"minecraft:oak_leaves"} ${cx.toFixed(1)} ${BASE + 12} ${cz.toFixed(1)} 5 6 5 0 40 force`);
+        }
+        if (step % 8 === 0) cmds.push(`playsound minecraft:item.elytra.flying master @a ${cx.toFixed(1)} ${BASE + 5} ${cz.toFixed(1)} 4 0.5`);
+        await mc.sendAll(cmds);
+        step++;
+        await sleep(150);
+      }
+      await mc.send('time set noon');
+      this.speech.say('Puh! Der Tornado ist weitergezogen. Alle Häuser stehen noch!');
     } else if (name === 'Feuerwerk-Show') {
       await mc.send('time set midnight');
       await b.fireworkShow(0, 0, 40, 40);

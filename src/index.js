@@ -20,7 +20,16 @@ import { plotCenter, roadCommands, lampCommands } from './city.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const config = JSON.parse(fs.readFileSync(path.join(root, 'config.json'), 'utf8'));
-const log = (...a) => console.log(new Date().toLocaleTimeString('de-DE'), ...a);
+// Protokoll: im Fenster und zusaetzlich in data/game.log (wird bei 5 MB neu begonnen)
+const logFile = path.join(root, 'data', 'game.log');
+const log = (...a) => {
+  const line = [new Date().toLocaleTimeString('de-DE'), ...a].join(' ');
+  console.log(line);
+  try {
+    if (fs.existsSync(logFile) && fs.statSync(logFile).size > 5e6) fs.renameSync(logFile, logFile + '.alt');
+    fs.appendFileSync(logFile, line + '\n');
+  } catch {}
+};
 
 // ---------- Overlay-Verbindungen ----------
 const app = express();
@@ -121,6 +130,8 @@ app.post('/api/showcase', (req, res) => {
     res.json({ startedAt, endedAt: Date.now() });
   } });
 });
+// Event von Hand ausloesen (Testpanel): Tornado, Meteorregen, Feuerwerk-Show, Regenbogen, Schneesturm, Party
+app.post('/api/event/:name', (req, res) => { builder.enqueue({ type: 'fn', fn: () => game.action.runEvent(req.params.name) }); res.json({ ok: true }); });
 app.get('/api/state', (req, res) => res.json({ ...game.state(), tiktok: tiktok.status, minecraft: mc.connected }));
 app.get('/api/player/:name', (req, res) => {
   const p = store.players[req.params.name.toLowerCase().replace(/^@/, '')];
