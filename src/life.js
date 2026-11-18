@@ -124,6 +124,8 @@ export class CityLife {
     }
 
     this.timer = setInterval(() => this.tick(), TICK_MS);
+    // Sicherheitsnetz: jede Minute klares Wetter und Mittag, falls irgendetwas Regen ausgeloest hat
+    setInterval(() => { this.mc.send('weather clear 1000000'); }, 60_000);
     this.log(`[Leben] ${this.cars.length} Autos fahren, Bewohner unterwegs`);
   }
 

@@ -344,7 +344,7 @@ export class Game {
     this.speech.say(`Party in Meme City! Danke ${spoken(p)}!`, true);
     this.broadcast({ type: 'banner', title: 'PARTY!', text: `Gesponsert von @${p.name}`, big: true });
     this.builder.enqueue({ type: 'fn', fn: async () => {
-      await this.builder.mc.send('weather thunder');
+      // kein Gewitter (Regen soll nie kommen)
       await this.builder.camera(0, -30, 45, 0, -50, 0);
       await this.builder.fireworkShow(0, 0, 30, 20);
       await this.builder.mc.send('weather clear');

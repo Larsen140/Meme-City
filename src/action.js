@@ -221,7 +221,7 @@ export class Action {
       await sleep(25000);
       for (const c of cols) await mc.send(`fill -31 ${BASE} -2 31 ${BASE + 31} -2 air replace ${c}_stained_glass`);
     } else if (name === 'Schneesturm') {
-      await mc.send('weather rain');
+      // kein echter Regen mehr – nur Schneeflocken als Effekt
       for (let i = 0; i < 40; i++) {
         await mc.send(`particle minecraft:snowflake 0 ${BASE + 25} 0 50 15 50 0.02 1500 force`);
         await sleep(400);

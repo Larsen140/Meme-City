@@ -196,7 +196,7 @@ export class Builder {
     const mc = this.mc;
     await mc.sendAll([
       'gamerule advance_time false', 'gamerule block_drops false', 'gamerule advance_weather false', 'gamerule spawn_mobs false',
-      'time set noon', 'weather clear',
+      'time set noon', 'weather clear 1000000',
       `setworldspawn 0 ${BASE} 0`, 'forceload add -32 -32 31 31',
     ]);
     await mc.sendAll(plazaCommands());
