@@ -77,6 +77,22 @@ const music = new Music({
 const speakStart = speech.onStart, speakEnd = speech.onEnd;
 speech.onStart = (t) => { music.duck(true); speakStart(t); };
 speech.onEnd = (t) => { music.duck(false); speakEnd(t); };
+
+// Stimme NUR, wenn der Buergermeister direkt einem Zuschauer antwortet, der gerade geschrieben hat.
+// Alles andere (Ansagen, Danke, Events) erscheint nur als Sprechblase ohne Ton.
+// Grund: TikTok sperrt LIVEs mit automatischer Computerstimme ohne Bezug zum Chat.
+const voiceSay = speech.say.bind(speech);
+let chatReply = false;
+let silentTimer = null;
+game.duringChat = (fn) => { chatReply = true; try { fn(); } finally { chatReply = false; } };
+speech.say = (text, prio) => {
+  if (!text) return;
+  if (chatReply || config.voiceAlways) return voiceSay(text, prio);
+  if (speech.speaking) return; // gerade echte Antwort -> nicht dazwischenfunken
+  broadcast({ type: 'speak', text, on: true, silent: true });
+  clearTimeout(silentTimer);
+  silentTimer = setTimeout(() => broadcast({ type: 'speak', on: false }), 3500 + text.length * 45);
+};
 tiktok.onStatus = (s) => broadcast({ type: 'tiktok', status: s });
 
 const VERSION = String(Date.now()); // aendert sich bei jedem Neustart -> Overlay laedt sich selbst neu
@@ -97,7 +113,7 @@ const GIFTS = {
 };
 const testUser = (b) => ({ name: String(b.user || 'testzuschauer').replace(/^@/, '').trim(), nick: b.nick || b.user, avatar: b.avatar || '' });
 
-app.post('/api/sim/chat', (req, res) => { game.onChat(testUser(req.body), String(req.body.text || '')); res.json({ ok: true }); });
+app.post('/api/sim/chat', (req, res) => { game.duringChat(() => game.onChat(testUser(req.body), String(req.body.text || ''))); res.json({ ok: true }); });
 app.post('/api/sim/like', (req, res) => { game.onLike(testUser(req.body), Number(req.body.count) || 1); res.json({ ok: true }); });
 app.post('/api/sim/follow', (req, res) => { game.onFollow(testUser(req.body)); res.json({ ok: true }); });
 app.post('/api/sim/gift', (req, res) => {

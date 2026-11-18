@@ -426,13 +426,15 @@ nextTicker();
 
 // ---------- Buergermeister ----------
 let mouthTimer, poseTimer;
-function talk(on, text) {
+function talk(on, text, silent) {
   const m = $('mayor');
   clearInterval(mouthTimer);
   if (on) {
     $('bubble').textContent = text;
     m.classList.add('talking');
-    mouthTimer = setInterval(() => m.classList.toggle('open', Math.random() > 0.35), 110);
+    m.classList.remove('open');
+    // ohne Ton bewegt sich der Mund nicht (nur Sprechblase)
+    if (!silent) mouthTimer = setInterval(() => m.classList.toggle('open', Math.random() > 0.35), 110);
     if (!m.classList.contains('cheer')) mayorPose(Math.random() > 0.5 ? 'point' : '', 1800);
   } else {
     m.classList.remove('talking', 'open');
@@ -567,7 +569,7 @@ function connect() {
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);
     else if (m.type === 'ticker') ticker(m.text, m.highlight);
-    else if (m.type === 'speak') talk(m.on, m.text);
+    else if (m.type === 'speak') talk(m.on, m.text, m.silent);
     else if (m.type === 'likes') likeBubble(m);
     else if (m.type === 'confetti') confetti(m.amount);
   };

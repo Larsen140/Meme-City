@@ -83,7 +83,8 @@ export class TikTok {
 
     c.on(WebcastEvent.CHAT, (d) => this.safe(() => {
       if (this.isOld(d, String(d.comment ?? d.content ?? ''))) return;
-      this.game.onChat(userOf(d), String(d.comment ?? d.content ?? ''));
+      const run = () => this.game.onChat(userOf(d), String(d.comment ?? d.content ?? ''));
+      if (this.game.duringChat) this.game.duringChat(run); else run();
     }));
     c.on(WebcastEvent.LIKE, (d) => this.safe(() => this.game.onLike(userOf(d), Number(d.likeCount ?? d.count ?? 1))));
     c.on(WebcastEvent.MEMBER, (d) => this.safe(() => this.game.onJoin(userOf(d))));
