@@ -2,6 +2,7 @@
 // Antworten sind kurz (werden vorgelesen) und – wo moeglich – persoenlich.
 // WICHTIG: Keine Aufforderung zu Geschenken (TikTok-Richtlinie).
 import { MAX_LEVEL, levelInfo } from './levels.js';
+import { art } from './city.js';
 
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
 
@@ -53,7 +54,7 @@ export function answer(game, p, t, name) {
       `${name}, alles was du im LIVE machst, zählt für dein Haus. Am einfachsten mit Likes!`],
     // ---- Stadt ----
     [/gemeinschaftsbau|rathaus|fußballplatz|fussballplatz|freibad|was wird gebaut|nächste gebäude|naechste gebaeude/, () => s.community
-      ? `Gerade bauen wir zusammen am ${s.community.name}: ${fmt(s.community.progress)} von ${fmt(s.community.goal)} Punkten. Jeder Punkt für dein Haus zählt auch dafür!`
+      ? `Gerade bauen wir zusammen an ${art(s.community.name, 'dat')}: ${fmt(s.community.progress)} von ${fmt(s.community.goal)} Punkten. Jeder Punkt für dein Haus zählt auch dafür!`
       : `Alle Gemeinschaftsbauten sind fertig. Danke an alle!`],
     [/ehrenbürgermeister|ehrenbuergermeister|krone/, () => s.honorary
       ? `Ehrenbürgermeister ist, wer auf Platz eins steht. Gerade ist das ${s.honorary.nick || s.honorary.name} und trägt die goldene Krone!`

@@ -1,7 +1,7 @@
 import fs from 'fs';
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
-import { COMMUNITY_PROJECTS, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
+import { COMMUNITY_PROJECTS, art, cap, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 import { isQuestion, answer } from './faq.js';
 import { fixCommand } from './typo.js';
 
@@ -222,7 +222,7 @@ export class Game {
       for (const m of [0.25, 0.5, 0.75, 0.9]) {
         if (before < m && now >= m) {
           const pct = Math.round(m * 100);
-          this.speech.say(pct === 90 ? `Fast geschafft! Das ${cur.name} ist zu neunzig Prozent fertig!` : `${pct} Prozent geschafft! Das ${cur.name} wächst!`, true);
+          this.speech.say(pct === 90 ? `Fast geschafft! ${cap(art(cur.name, 'nom'))} ist zu neunzig Prozent fertig!` : `${pct} Prozent geschafft! ${cap(art(cur.name, 'nom'))} wächst!`, true);
           this.broadcast({ type: 'banner', title: `🏗️ ${cur.name.toUpperCase()}: ${pct} %`, text: `${fmt(c.progress)} / ${fmt(cur.goal)} Punkte`, big: pct >= 75 });
         }
       }
@@ -240,7 +240,7 @@ export class Game {
       const index = c.index++;
       this.builder.enqueue({ type: 'community', index, name: proj.name, partial: (c.stage || 0) > 0 });
       c.stage = 0;
-      this.speech.say(`Gemeinsam geschafft! Meme City bekommt ein ${proj.name}! Danke an alle!`, true);
+      this.speech.say(`Gemeinsam geschafft! Meme City bekommt ${art(proj.name, 'ein')}! Danke an alle!`, true);
       this.broadcast({ type: 'banner', title: 'GEMEINSCHAFTSBAU!', text: `${proj.name} wird gebaut`, big: true });
     }
   }
@@ -508,41 +508,67 @@ export class Game {
     // WICHTIG (TikTok-Richtlinien): Der Buergermeister fordert NIE automatisch zu Geschenken auf.
     // Er erzaehlt von der Stadt, erklaert Chat-Befehle und stellt Fragen. Auf Geschenke reagiert er nur.
     const lines = [
-      'Schreib Haus in den Chat und du bekommst ein eigenes Grundstück in Meme City!',
-      'Schreib: Zeig mein Haus, dann fliegen wir hin.',
-      'Mit farbe rot, farbe blau oder einer anderen Farbe streichst du dein Dach neu!',
-      'Schreib haustier pinguin, katze oder hund, dann zieht ein Haustier in deinen Garten.',
-      'Schreib party, dann feiern wir bei dir zu Hause!',
-      'Wie findet ihr die Stadt bis jetzt? Schreibt es in den Chat!',
-      'Seid ihr Team Nord oder Team Süd? Schreibt es in den Chat!',
-      'Welches Gebäude soll Meme City als nächstes bekommen? Schreibt eure Ideen!',
-      `Meme City hat schon ${fmt(s.houses)} Häuser! Fehlt deins noch?`,
-      'Schaut mal, wie die Autos durch die Straßen fahren. Hier ist richtig was los!',
-      'Falls ich eure Nachricht übersehen habe, schreibt sie einfach nochmal!',
-      'Ich lese euren Chat mit. Wenn ich etwas verpasst habe, schreibt es gern nochmal!',
+      'Schreib Haus in den Chat und du kriegst ein eigenes Grundstück in Meme City. Gönn dir!',
+      'Schreib zeig mein Haus, dann fliegen wir hin. Sightseeing deluxe!',
+      'Dein Dach ist lowkey langweilig? Schreib farbe rot, farbe blau oder deine Lieblingsfarbe!',
+      'Schreib haustier pinguin, katze oder hund, dann zieht ein Haustier bei dir ein. Mega süß, no cap!',
+      'Schreib party, dann geht bei dir zu Hause richtig was ab!',
+      'Real talk: Wie findet ihr die Stadt bis jetzt? Ab in den Chat damit!',
+      'Team Nord oder Team Süd? Wer ist hier der Ehrenmann? Schreibt es in den Chat!',
+      'Welches Gebäude soll Meme City als nächstes kriegen? Haut eure Ideen raus!',
+      `Sheesh, Meme City hat schon ${fmt(s.houses)} Häuser! Fehlt deins etwa noch? Das wär ja cringe.`,
+      'Schaut mal, wie die Autos durch die Straßen cruisen. Hier ist echt was los, Digga!',
+      'Falls ich eure Nachricht übersehen hab: sorry, mein Fehler! Schreibt sie einfach nochmal.',
+      'Ich les euren Chat mit, versprochen. Wenn ich was verpeilt hab, schreibt es nochmal!',
+      'Bürgermeister sein ist wild. Den ganzen Tag Häuser bauen und null Urlaub!',
+      'Kurze Info: Ich bin der coolste Bürgermeister in ganz Minecraft. Keine Widerrede!',
+      'Die Vibes in Meme City heute? Einfach zehn von zehn!',
     ];
-    if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Respekt!`);
+    if (s.top[0]) lines.push(`Platz eins ist gerade ${s.top[0].nick || s.top[0].name} mit Stufe ${s.top[0].level}. Absolut goated, Respekt!`);
     if (s.community) {
       // Der Gemeinschaftsbau ist das gemeinsame Ziel – darueber redet der Buergermeister am liebsten
       const c = s.community, pct = Math.floor((100 * c.progress) / c.goal), rest = c.goal - c.progress;
       const next = COMMUNITY_PROJECTS[this.store.data.community.index + 1]?.name;
       const commLines = [
         `Unser Gemeinschaftsbau: ${c.name}! Wir stehen bei ${pct} Prozent.`,
-        `Noch ${fmt(rest)} Punkte, dann bekommt Meme City ein ${c.name}! Das schaffen wir zusammen.`,
-        `Jeder Punkt, den ihr für euer Haus sammelt, zählt auch für das ${c.name} mit.`,
-        `Stellt euch vor: Mitten auf dem Stadtplatz steht bald ein ${c.name}. ${fmt(c.progress)} von ${fmt(c.goal)} haben wir schon!`,
-        `Wer hat Lust auf ein ${c.name}? Wir sind schon bei ${pct} Prozent!`,
+        `Noch ${fmt(rest)} Punkte, dann bekommt Meme City ${art(c.name, 'ein')}! Das schaffen wir zusammen.`,
+        `Jeder Punkt, den ihr für euer Haus sammelt, zählt auch für ${art(c.name, 'akk')} mit.`,
+        `Stellt euch vor: Mitten auf dem Stadtplatz steht bald ${art(c.name, 'ein')}. ${fmt(c.progress)} von ${fmt(c.goal)} haben wir schon!`,
+        `Wer hat Bock auf ${art(c.name, 'ein')}? Wir sind schon bei ${pct} Prozent!`,
       ];
-      if (next) commLines.push(`Nach dem ${c.name} kommt als nächstes ein ${next}. Ich bin schon gespannt!`);
+      if (next) commLines.push(`Nach ${art(c.name, 'dat')} kommt als nächstes ${art(next, 'ein')}. Ich bin schon so hyped!`);
       // doppelt so oft wie andere Saetze
       lines.push(...commLines, ...commLines, ...commLines);
       this.broadcast({ type: 'ticker', text: `🏗️ Gemeinschaftsbau ${c.name}: ${fmt(c.progress)} / ${fmt(c.goal)} (${pct} %)`, highlight: true });
     }
-    this.speech.say(pick(lines));
+    // Jede zweite Ansage ist ein Befehls-Tipp, damit alle wissen, was sie machen koennen
+    this._idleN = (this._idleN || 0) + 1;
+    if (this._idleN % 2 === 1) {
+      const some = (a, n) => [...a].sort(() => Math.random() - 0.5).slice(0, n);
+      const [p1, p2, p3] = some(['Katze', 'Hund', 'Pinguin', 'Löwe', 'Drache', 'Faultier', 'Panda', 'Fuchs', 'Axolotl', 'Papagei', 'Eisbär', 'Lama', 'Enderman', 'Wither', 'Schildkröte', 'Frosch'], 3);
+      const [c1, c2, c3] = some(['rot', 'blau', 'hellblau', 'türkis', 'grün', 'gelb', 'orange', 'lila', 'pink', 'schwarz', 'weiß', 'magenta'], 3);
+      const tips = [
+        `Wusstet ihr schon? Es gibt über dreißig Haustiere, Digga! Zum Beispiel ${p1}, ${p2} oder ${p3}. Schreib einfach haustier und das Tier.`,
+        'Neu in Meme City: Drache, Löwe, Faultier, Enderman und Wither als Haustier! Ein Drache im Garten? Absolut krass. Schreib haustier drache!',
+        `Dein Dach sieht aus wie von Oma? Kein Ding! Schreib farbe ${c1}, farbe ${c2} oder farbe ${c3}!`,
+        'Es gibt fünfzehn Dachfarben, von rot über türkis bis magenta. Pink ist übrigens lowkey die beste. Schreib farbe und deine Lieblingsfarbe!',
+        `Welches Haustier passt zu dir? Mein Tipp: ${p1}! Schreib haustier ${p1.toLowerCase()} und probier es aus!`,
+        'Ein Faultier als Haustier? Das bin ich montags. Schreib haustier faultier!',
+        'Schreib party, dann eskaliert es bei dir zu Hause. Im positiven Sinne!',
+        'Wer fünf Minuten chillt und dabei bleibt, dessen Haus wächst eine Stufe. Free Upgrade, einfach zwischendurch was schreiben!',
+        'Beim Bau-Sprint zählt jede Nachricht und jedes Like doppelt für den Gemeinschaftsbau. Achtet auf den Countdown oben, sonst seid ihr lost!',
+        'Bei der Abstimmung entscheidet ihr, was in der Stadt abgeht. Schreibt dann einfach eins, zwei oder drei!',
+        'Schreib nord oder süd und zeig beim nächsten Duell, welches Team der Boss ist!',
+      ].filter((t) => t !== this._lastTip);
+      this._lastTip = pick(tips);
+      this.speech.say(this._lastTip);
+    } else this.speech.say(pick(lines));
     this.broadcast({ type: 'ticker', text: pick([
       'Schreib „Haus“ in den Chat und zieh nach Meme City!',
       'Schreib „Zeig mein Haus“ und die Kamera fliegt hin!',
       'Chat-Befehle: „farbe rot“ · „haustier pinguin“ · „party“ · „nord“ / „süd“',
+      '🐾 Haustiere: Katze · Hund · Pinguin · Löwe · Drache · Faultier · Panda · Fuchs · Axolotl · Enderman · Wither …',
+      '🎨 Dachfarben: rot · blau · hellblau · türkis · grün · gelb · orange · lila · pink · schwarz · weiß · magenta',
       s.top[0] ? `👑 Platz 1: @${s.top[0].name} (Stufe ${s.top[0].level})` : 'Wer wird Platz 1?',
     ]) });
   }

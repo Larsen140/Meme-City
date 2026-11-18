@@ -281,6 +281,15 @@ export const COMMUNITY_PROJECTS = [
   { name: 'Stadion',      goal: 5000 },
 ];
 
+const GENUS = { Bar: 'f', Leuchtturm: 'm', 'Fußballplatz': 'm' }; // sonst saechlich
+/** Richtiger Artikel fuer einen Gemeinschaftsbau: art('Bar', 'ein') -> 'eine Bar' */
+export function art(name, fall) {
+  const g = GENUS[name] || 'n';
+  const t = { ein: { m: 'ein', f: 'eine', n: 'ein' }, nom: { m: 'der', f: 'die', n: 'das' }, akk: { m: 'den', f: 'die', n: 'das' }, dat: { m: 'dem', f: 'der', n: 'dem' } }[fall][g];
+  return t + ' ' + name;
+}
+export const cap = (t) => t[0].toUpperCase() + t.slice(1);
+
 /** Bauplan fuer einen Gemeinschaftsbau (gleiche Form wie housePlan). */
 export function communityPlan(name, cx, cz) {
   // Gemeinschaftsbauten schauen zum Brunnen in der Mitte

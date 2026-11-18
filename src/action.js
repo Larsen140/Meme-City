@@ -2,7 +2,7 @@
 //  1. Like-Ziele: gemeinsames Ziel ("Noch 200 Likes bis Meteorregen"), danach grosses Event
 //  2. Nord gegen Sued: regelmaessiges Like-Duell der beiden Stadthaelften
 //  3. Chat-Befehle: "farbe rot", "haustier katze", "party"
-import { BASE, plotCenter, frontOf } from './city.js';
+import { BASE, plotCenter, frontOf, art, cap } from './city.js';
 import { sleep } from './minecraft.js';
 import { closest } from './typo.js';
 
@@ -401,15 +401,15 @@ export class Action {
     if (!s) return;
     this.sprint = Date.now() + 60_000;
     this.log('[Bau-Sprint] gestartet');
-    this.speech.say(`Bau-Sprint! Eine Minute lang zählt alles doppelt für das ${s.name}. Jeder Like und jede Nachricht baut mit!`, true);
-    this.broadcast({ type: 'banner', title: '🏗️ BAU-SPRINT x2!', text: `1 Minute zählt alles doppelt fürs ${s.name}`, big: true });
+    this.speech.say(`Bau-Sprint! Eine Minute lang zählt alles doppelt für ${art(s.name, 'akk')}. Jeder Like und jede Nachricht baut mit!`, true);
+    this.broadcast({ type: 'banner', title: '🏗️ BAU-SPRINT x2!', text: `1 Minute zählt alles doppelt für ${art(s.name, 'akk')}`, big: true });
   }
 
   endSprint() {
     this.sprint = null;
     const s = this.game.state().community;
     this.log('[Bau-Sprint] vorbei');
-    if (s) this.speech.say(`Bau-Sprint vorbei! Das ${s.name} steht jetzt bei ${Math.floor((100 * s.progress) / s.goal)} Prozent.`);
+    if (s) this.speech.say(`Bau-Sprint vorbei! ${cap(art(s.name, 'nom'))} steht jetzt bei ${Math.floor((100 * s.progress) / s.goal)} Prozent.`);
     this.game.pushState();
   }
 
