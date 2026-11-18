@@ -244,7 +244,7 @@ export class Game {
   onChat(user, text) {
     const p = this.player(user);
     if (!p) return;
-    if (!this._fixing) { try { fs.appendFileSync('data/chat.log', `${new Date().toISOString().slice(0, 19).replace('T', ' ')} @${p.name}: ${text.replace(/\n/g, ' ')}\n`); } catch {} }
+    if (!this._fixing) { try { fs.appendFileSync('data/chat.log', `${new Date().toLocaleString('de-DE')} @${p.name}: ${text.replace(/\n/g, ' ')}\n`); } catch {} }
     if (this.action?.onChat(p, text)) { this.store.save(); return; }
     // Vertippter Befehl ("hause", "frabe rot", "zieg mein haus"): verstehen, ausfuehren und kurz erklaeren
     const fx = !this._fixing && fixCommand(text);
