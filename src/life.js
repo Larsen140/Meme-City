@@ -122,6 +122,8 @@ export class CityLife {
         car.s += SPEED * (TICK_MS / 1000);
         const p = this.pos(car);
         await this.mc.send(`tp @e[tag=mc_car_${car.id}] ${p.x} ${BASE} ${p.z} ${p.yaw} 0`);
+        // gleichmaessig ueber die Sekunde verteilen, damit der Kameraflug nicht ausgebremst wird
+        await new Promise((r) => setTimeout(r, (TICK_MS * 0.8) / this.cars.length));
       }
     } finally {
       this.busy = false;

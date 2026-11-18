@@ -24,7 +24,7 @@ export function freeSignCommand(cx, cz, n) {
     `{text:"FREI\\n",color:"#55FF7F",bold:true,extra:[{text:"Grundstück ${n + 1}",color:"#FFFFFF",bold:true}]}`);
 }
 
-const CAM_STEP_TICKS = 2; // alle 2 Ticks (0,1 s) ein Kameraschritt
+const CAM_STEP_TICKS = 1; // jeden Tick (0,05 s) ein Kameraschritt
 const COLORS = [0xff4d4d, 0xffd84d, 0x4dff88, 0x4dc3ff, 0xc34dff, 0xff8a00, 0xffffff];
 
 export class Builder {
@@ -92,7 +92,7 @@ export class Builder {
     const to = { x, y, z, yaw: (Math.atan2(-dx, dz) * 180) / Math.PI, pitch: (-Math.atan2(dy, Math.hypot(dx, dz)) * 180) / Math.PI };
     let dYaw = ((to.yaw - from.yaw + 540) % 360) - 180; // kuerzester Drehweg
     const dist = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
-    const dur = seconds ?? Math.min(5, Math.max(2, dist / 22 + Math.abs(dYaw) / 120));
+    const dur = seconds ?? Math.min(3.5, Math.max(1.2, dist / 35 + Math.abs(dYaw) / 200));
     const steps = Math.max(1, Math.round((dur * 20) / CAM_STEP_TICKS));
     const arc = Math.min(25, dist * 0.18); // bei weiten Fluegen leicht nach oben ausholen
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
