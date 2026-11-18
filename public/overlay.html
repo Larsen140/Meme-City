@@ -155,7 +155,7 @@
   /* ---------- Laufband ---------- */
   #ticker { position: absolute; left: 0; right: 0; bottom: 50px; height: 70px; background: rgba(18,16,40,.9); border-top: 3px solid var(--pink); border-bottom: 3px solid var(--pink); overflow: hidden; }
   #ticker .lab { position: absolute; left: 0; top: 0; bottom: 0; z-index: 2; background: var(--pink); padding: 0 24px; font-size: 30px; font-weight: 800; display: flex; align-items: center; }
-  #ticker .run { position: absolute; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; font-size: 34px; font-weight: 700; left: 1080px; }
+  #ticker .run { position: absolute; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; font-size: 34px; font-weight: 700; left: 0; transform: translateX(1080px); will-change: transform; text-shadow: none; }
   #ticker .run.hl { color: var(--gold); }
 
   /* ---------- Likes + Konfetti ---------- */
@@ -263,20 +263,22 @@ const ava = (src, cls = 'ava') => src ? `<img src="${esc(src)}" referrerpolicy="
 if (location.search.includes('preview')) document.body.classList.add('preview');
 
 // ---------- Zustand ----------
+const _html = {};
+function setHTML(id, html) { if (_html[id] === html) return; _html[id] = html; $(id).innerHTML = html; }
 function renderState(s) {
   $('cityName').textContent = (s.city || 'Meme City').toUpperCase();
   $('mayorName').textContent = s.mayorName;
   $('houses').textContent = fmt(s.houses);
   $('citizens').textContent = fmt(s.citizens);
   $('pets').textContent = fmt(s.pets || 0);
-  $('rows').innerHTML = s.top.length ? s.top.slice(0, 5).map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
-    : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>';
-  $('honor').innerHTML = s.honorary
+  setHTML('rows', s.top.length ? s.top.slice(0, 5).map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
+    : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>');
+  setHTML('honor', s.honorary
     ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">Platz 1 der Stadt</div></div>`
-    : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Wer wird es?</div></div>`;
-  $('comm').innerHTML = s.community
+    : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Wer wird es?</div></div>`);
+  setHTML('comm', s.community
     ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU</div><div class="cname">${esc(s.community.name)}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
-    : `<div class="ptitle">🏗️ ALLE GEMEINSCHAFTSBAUTEN FERTIG!</div>`;
+    : `<div class="ptitle">🏗️ ALLE GEMEINSCHAFTSBAUTEN FERTIG!</div>`);
 }
 
 function renderGifts(s) {
@@ -328,10 +330,12 @@ function showGoal(g) {
   const el = $('goal');
   el.className = 'panel show';
   const pct = Math.min(100, (100 * g.cur) / g.target);
-  el.innerHTML = `<div class="lab">🎯 <b>${esc(g.name)}</b></div><div class="gbar"><i style="width:${pct}%"></i></div><div class="num">${fmt(g.cur)} / ${fmt(g.target)} ♥</div>${g.next ? `<div class="next">${esc(g.next)}</div>` : ''}`;
+  const html = `<div class="lab">🎯 <b>${esc(g.name)}</b></div><div class="gbar"><i style="width:${pct}%"></i></div><div class="num">${fmt(g.cur)} / ${fmt(g.target)} ♥</div>${g.next ? `<div class="next">${esc(g.next)}</div>` : ''}`;
+  if (el._h !== html) { el._h = html; el.innerHTML = html; }
 }
 function showRaffle(r) {
   const el = $('goal');
+  el._h = null;
   duelUntil = Date.now() + (r.end ? 8000 : 3000);
   el.className = 'panel show raffle';
   el.innerHTML = r.end
@@ -340,6 +344,7 @@ function showRaffle(r) {
 }
 function showDuel(d) {
   const el = $('goal');
+  el._h = null;
   duelUntil = Date.now() + (d.end ? 8000 : 3000);
   el.className = 'panel show duel';
   const tot = d.nord + d.sued, pct = tot ? (100 * d.nord) / tot : 50;
@@ -420,7 +425,8 @@ function nextTicker() {
   run.textContent = item.text;
   run.className = 'run' + (item.hl ? ' hl' : '');
   const w = run.scrollWidth, dist = 1080 + w, speed = 220;
-  run.animate([{ left: '1080px' }, { left: `${-w}px` }], { duration: dist / speed * 1000, easing: 'linear' }).onfinish = () => { tickerBusy = false; nextTicker(); };
+  run.style.left = '0px';
+  run.animate([{ transform: 'translateX(1080px)' }, { transform: `translateX(${-w}px)` }], { duration: dist / speed * 1000, easing: 'linear' }).onfinish = () => { tickerBusy = false; nextTicker(); };
 }
 nextTicker();
 

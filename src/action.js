@@ -19,6 +19,8 @@ const PETS = {
   hase: ['rabbit', 'Hase'], panda: ['panda', 'Panda'], schwein: ['pig', 'Schwein'], kuh: ['cow', 'Kuh'],
   schaf: ['sheep', 'Schaf'], huhn: ['chicken', 'Huhn'], pferd: ['horse', 'Pferd'], frosch: ['frog', 'Frosch'],
   axolotl: ['axolotl', 'Axolotl'], biene: ['bee', 'Biene'], lama: ['llama', 'Lama'], esel: ['donkey', 'Esel'],
+  fisch: ['tropical_fish', 'Fisch'], schildkröte: ['turtle', 'Schildkröte'], schildkroete: ['turtle', 'Schildkröte'], bär: ['polar_bear', 'Eisbär'], baer: ['polar_bear', 'Eisbär'], eisbär: ['polar_bear', 'Eisbär'],
+  ziege: ['goat', 'Ziege'], kamel: ['camel', 'Kamel'], wolf: ['wolf', 'Wolf'], ente: ['chicken', 'Ente'], pinguin: ['parrot', 'Pinguin-Papagei'], kaninchen: ['rabbit', 'Kaninchen'], katz: ['cat', 'Katze'],
 };
 
 /** Tierwort erkennen, auch Mehrzahl/Verkleinerung: "hunde", "katzen", "kätzchen", "hündchen" */
