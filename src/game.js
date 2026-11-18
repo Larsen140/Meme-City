@@ -41,6 +41,8 @@ export class Game {
     this.sessionLikes = new Map(); // Likes je Zuschauer in diesem Stream
     this.likeLog = [];             // fuer "Likes pro Minute"
     setInterval(() => this.likeStats(), 45_000);
+    // Chat-Befehle regelmaessig zeigen (versetzt zur Like-Statistik)
+    setTimeout(() => { this.broadcast({ type: 'help' }); setInterval(() => this.broadcast({ type: 'help' }), 60_000); }, 20_000);
   }
 
   /** Blendet ab und zu die Like-Statistik dieses Streams ein. */

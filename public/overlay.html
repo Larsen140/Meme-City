@@ -126,6 +126,15 @@
   #likestats .r .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #likestats .r .n { color: var(--pink); white-space: nowrap; }
 
+  /* ---------- Chat-Befehle ---------- */
+  #help { position: absolute; left: 36px; right: 36px; top: 1130px; padding: 16px 24px; opacity: 0; transform: translateY(30px); transition: all .4s ease; border-color: var(--mint); }
+  #help.show { opacity: 1; transform: none; }
+  #help .ptitle { color: var(--mint); margin-bottom: 6px; }
+  #help .cmds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 20px; }
+  #help .c { display: flex; gap: 10px; align-items: baseline; font-size: 21px; min-width: 0; }
+  #help .c code { font-family: inherit; font-weight: 800; background: rgba(61,245,176,.15); color: var(--mint); padding: 0 10px; border-radius: 8px; white-space: nowrap; }
+  #help .c span { color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
   /* ---------- Buergermeister ---------- */
   #mayor { position: absolute; left: 36px; bottom: 140px; width: 1008px; height: 330px; display: flex; align-items: flex-end; gap: 0; }
   #mayorPic { width: 300px; height: 330px; position: relative; flex: none; }
@@ -184,6 +193,7 @@
 
 <div id="player" class="panel"></div>
 <div id="likestats" class="panel"></div>
+<div id="help" class="panel"></div>
 
 <div id="mayor">
   <div id="mayorPic">
@@ -252,7 +262,7 @@ function showLikeStats(s) {
   $('likestats').innerHTML = `<div class="head"><div class="ptitle">❤️ TOP-LIKER HEUTE</div>
     <span><b>${fmt(s.total)}</b> Likes · <b>${fmt(s.perMin)}</b>/Min · ${fmt(s.likers)} Fans</span></div>
     <div class="rows">${s.top.map((p, i) => `<div class="r"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="n">${fmt(p.likes)} ♥</div></div>`).join('')}</div>`;
-  $('player').classList.remove('show');
+  $('player').classList.remove('show'); $('help').classList.remove('show');
   $('likestats').classList.add('show');
   clearTimeout(statsTimer);
   statsTimer = setTimeout(() => $('likestats').classList.remove('show'), 9000);
@@ -274,6 +284,24 @@ function showDuel(d) {
   const tot = d.nord + d.sued, pct = tot ? (100 * d.nord) / tot : 50;
   const right = d.end ? (d.winner ? (d.winner === 'nord' ? '🏆 NORD' : '🏆 SÜD') : 'PATT') : `⏱ ${Math.floor(d.left / 60)}:${String(d.left % 60).padStart(2, '0')}`;
   el.innerHTML = `<div class="lab nord">🔵 NORD ${fmt(d.nord)}</div><div class="gbar"><i style="width:${pct}%"></i></div><div class="lab sued">${fmt(d.sued)} SÜD 🔴</div><div class="time">${right}</div>`;
+}
+
+// ---------- Chat-Befehle ----------
+let helpTimer;
+function showHelp() {
+  const cmds = [
+    ['Haus', 'eigenes Grundstück'],
+    ['zeig mein haus', 'Kamera fliegt hin'],
+    ['farbe rot', 'Dach neu streichen'],
+    ['haustier katze', 'Haustier im Garten'],
+    ['party', 'Feuerwerk bei dir'],
+    ['nord / süd', 'Team fürs Duell'],
+  ];
+  $('help').innerHTML = `<div class="ptitle">💬 DAS KANNST DU IN DEN CHAT SCHREIBEN</div><div class="cmds">${cmds.map(([c, t]) => `<div class="c"><code>${c}</code><span>${t}</span></div>`).join('')}</div>`;
+  $('player').classList.remove('show'); $('likestats').classList.remove('show');
+  $('help').classList.add('show');
+  clearTimeout(helpTimer);
+  helpTimer = setTimeout(() => $('help').classList.remove('show'), 12000);
 }
 
 // ---------- Banner ----------
@@ -447,9 +475,10 @@ function connect() {
     const m = JSON.parse(e.data);
     if (m.type === 'hello') { if (window.__v && window.__v !== m.version) location.reload(); window.__v = m.version; }
     if (m.type === 'state') { renderState(m.state); renderGifts(m.state); }
-    else if (m.type === 'player') { $('likestats').classList.remove('show'); showPlayer(m.card); }
+    else if (m.type === 'player') { $('likestats').classList.remove('show'); $('help').classList.remove('show'); showPlayer(m.card); }
     else if (m.type === 'likestats') showLikeStats(m);
     else if (m.type === 'goal') showGoal(m);
+    else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);
     else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
