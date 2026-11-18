@@ -13,6 +13,7 @@ import { Game } from './game.js';
 import { TikTok } from './tiktok.js';
 import { CityLife } from './life.js';
 import { Music } from './music.js';
+import { adminRoutes } from './admin.js';
 import { Action } from './action.js';
 import { GiftFx } from './giftfx.js';
 import { keepAwake } from './keepawake.js';
@@ -169,6 +170,7 @@ app.post('/api/event/:name', (req, res) => { builder.enqueue({ type: 'fn', fn: (
 app.post('/api/css', (req, res) => { broadcast({ type: 'css', css: String(req.body.css || '') }); res.json({ ok: true }); });
 app.post('/api/hidesel', (req, res) => { broadcast({ type: 'hidesel', sel: String(req.body.sel || '') }); res.json({ ok: true }); });
 app.post('/api/bare', (req, res) => { broadcast({ type: 'bare', on: !!req.body.on }); res.json({ ok: true }); });
+adminRoutes(app, { game, builder, speech, broadcast, mc, music, tiktok, store, root });
 app.get('/api/state', (req, res) => res.json({ ...game.state(), tiktok: tiktok.status, minecraft: mc.connected }));
 app.get('/api/player/:name', (req, res) => {
   const p = store.players[req.params.name.toLowerCase().replace(/^@/, '')];

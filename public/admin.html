@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Meme City Admin</title>
+<style>
+  :root { --bg: #0d1020; --card: #171b33; --line: #2a3060; --text: #eef0ff; --muted: #9aa0c8; --mint: #3df5b0; --gold: #ffc93c; --pink: #ff5c9a; --red: #ff4d5e; --blue: #4cc9ff; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.4 system-ui, 'Segoe UI', sans-serif; }
+  header { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; padding: 10px 16px; background: #0a0d1acc; backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+  header h1 { font-size: 20px; margin: 0 8px 0 0; } header h1 b { color: var(--gold); }
+  .pill { padding: 3px 10px; border-radius: 99px; background: var(--card); border: 1px solid var(--line); font-size: 13px; white-space: nowrap; }
+  .pill.ok { border-color: var(--mint); color: var(--mint); } .pill.bad { border-color: var(--red); color: var(--red); } .pill.hot { border-color: var(--gold); color: var(--gold); }
+  main { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; padding: 16px; max-width: 1500px; margin: 0 auto; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; }
+  section.wide { grid-column: 1 / -1; }
+  h2 { font-size: 14px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  button { font: inherit; font-weight: 700; color: var(--text); background: #232a52; border: 1px solid #3a4280; border-radius: 10px; padding: 7px 12px; cursor: pointer; }
+  button:hover { background: #2d3566; } button:active { transform: scale(.97); }
+  button.go { background: var(--mint); color: #08121a; border-color: var(--mint); }
+  button.gold { background: var(--gold); color: #1a1405; border-color: var(--gold); }
+  button.warn { border-color: var(--red); color: #ffb3bb; }
+  input, textarea, select { font: inherit; color: var(--text); background: #0f1328; border: 1px solid var(--line); border-radius: 10px; padding: 7px 10px; min-width: 0; }
+  textarea { width: 100%; resize: vertical; min-height: 64px; }
+  .grow { flex: 1; }
+  .quick button { font-weight: 600; font-size: 13px; }
+  .log { height: 260px; overflow: auto; background: #0a0d1a; border-radius: 10px; padding: 8px; font: 12px/1.45 Consolas, monospace; color: #c9cdf0; white-space: pre-wrap; }
+  .log .cmd { color: var(--mint); } .log .gift { color: var(--gold); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; } td, th { padding: 4px 6px; text-align: left; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; } tr:hover td { background: #1d2242; cursor: pointer; }
+  #toast { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: #232a52; border: 1px solid var(--mint); padding: 8px 16px; border-radius: 10px; opacity: 0; transition: opacity .3s; pointer-events: none; z-index: 9; }
+  #toast.show { opacity: 1; } #toast.err { border-color: var(--red); }
+  label.sm { color: var(--muted); font-size: 13px; }
+  .bar { height: 10px; background: #0f1328; border-radius: 6px; overflow: hidden; margin-top: 6px; } .bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--pink), var(--gold)); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏙️ <b>Meme City</b> Admin</h1>
+  <span class="pill" id="sTik">TikTok …</span>
+  <span class="pill" id="sMc">Minecraft …</span>
+  <span class="pill" id="sAct">aktiv: –</span>
+  <span class="pill" id="sLikes">Likes: –</span>
+  <span class="pill" id="sQueue">Warteschlange: –</span>
+  <span class="pill" id="sNext">–</span>
+</header>
+<main>
+  <section>
+    <h2>🎙️ Bürgermeister sagt</h2>
+    <textarea id="sayText" placeholder="Was soll der Bürgermeister sagen? (Enter = senden)"></textarea>
+    <div class="row" style="margin-top:8px"><button class="go" onclick="say()">Sagen</button><button onclick="$('sayText').value=''">Leeren</button></div>
+    <div class="row quick" id="quick"></div>
+  </section>
+
+  <section>
+    <h2>📢 Overlay</h2>
+    <div class="row"><input id="banTitle" class="grow" placeholder="Banner-Titel"><input id="banText" class="grow" placeholder="Text darunter"></div>
+    <div class="row"><button class="go" onclick="post('banner',{title:$('banTitle').value,text:$('banText').value,big:true})">Banner zeigen</button>
+      <button onclick="post('confetti')">🎉 Konfetti</button></div>
+    <div class="row"><input id="tick" class="grow" placeholder="Text fürs Laufband"><button onclick="post('ticker',{text:$('tick').value})">Ins Laufband</button></div>
+    <div class="row"><button onclick="post('pause',{on:true})">⏸️ Pause-Bild an</button><button onclick="post('pause',{on:false})">▶️ Pause aus</button>
+      <button onclick="post('overlay-reload')">🔄 Overlay neu laden</button></div>
+  </section>
+
+  <section>
+    <h2>🎮 Spiel</h2>
+    <div class="row"><button class="gold" onclick="post('start/vote')">🗳️ Abstimmung</button><button class="gold" onclick="post('start/duel')">⚔️ Duell</button>
+      <button class="gold" onclick="post('start/sprint')">🏗️ Bau-Sprint</button><button onclick="post('start/loyalty')">💎 Dabei-Bonus jetzt</button></div>
+    <label class="sm">Ereignis</label>
+    <div class="row" id="events"></div>
+    <label class="sm">Show (läuft als nächste, wenn gerade nichts los ist)</label>
+    <div class="row" id="shows"></div>
+  </section>
+
+  <section>
+    <h2>🎥 Kamera</h2>
+    <div class="row"><button onclick="post('camera/overview')">🏙️ Überblick</button><button onclick="post('zoo')">🦁 Tierpark-Tour</button>
+      <button onclick="post('show/wheel')">🎡 Riesenrad</button><button onclick="post('show/board')">📋 Tafel</button></div>
+    <div class="row"><input id="camName" class="grow" placeholder="Name des Zuschauers"><button onclick="post('camera/player',{name:$('camName').value})">Zum Haus fliegen</button></div>
+    <div class="row"><button class="warn" onclick="post('camera/fix')">🔧 Kamera reparieren</button></div>
+  </section>
+
+  <section>
+    <h2>👤 Zuschauer</h2>
+    <div class="row"><input id="pq" class="grow" placeholder="Name suchen …" oninput="players()"></div>
+    <table><thead><tr><th>Name</th><th>Stufe</th><th>Punkte</th><th>Haus</th></tr></thead><tbody id="ptab"></tbody></table>
+    <div class="row" style="margin-top:8px"><input id="pName" class="grow" placeholder="Name"><input id="pPts" type="number" value="10" style="width:80px"></div>
+    <div class="row"><button class="go" onclick="post('points',{name:$('pName').value,points:+$('pPts').value})">➕ Punkte geben</button>
+      <button onclick="post('house',{name:$('pName').value})">🏠 Haus geben</button><button onclick="post('rebuild',{name:$('pName').value})">🔁 Haus neu setzen</button>
+      <button onclick="post('camera/player',{name:$('pName').value})">🎥 Zeigen</button></div>
+  </section>
+
+  <section>
+    <h2>🌍 Welt & Musik</h2>
+    <div class="row"><button onclick="post('time/morgen')">🌅 Morgen</button><button onclick="post('time/tag')">☀️ Tag</button><button onclick="post('time/abend')">🌇 Abend</button><button onclick="post('time/nacht')">🌙 Nacht</button></div>
+    <div class="row"><button onclick="post('weather/klar')">🌤️ Klar</button><button onclick="post('weather/regen')">🌧️ Regen</button><button onclick="post('weather/gewitter')">⛈️ Gewitter</button></div>
+    <label class="sm">Musik-Lautstärke <b id="volv">–</b></label>
+    <div class="row"><input id="vol" type="range" min="0" max="1" step="0.05" class="grow" onchange="post('music',{volume:+this.value})" oninput="$('volv').textContent=Math.round(this.value*100)+' %'">
+      <button onclick="post('music',{hype:true})">🔥 Hype an</button><button onclick="post('music',{hype:false})">Hype aus</button></div>
+    <label class="sm">Minecraft-Befehl (ohne /)</label>
+    <div class="row"><input id="mccmd" class="grow" placeholder="z. B. time set noon"><button onclick="mcCmd()">Ausführen</button></div>
+    <div class="log" id="mcout" style="height:60px"></div>
+  </section>
+
+  <section>
+    <h2>🏗️ Bauen</h2>
+    <div id="comm"></div>
+    <label class="sm">Bonus-Bau (belegt 4 freie Grundstücke!)</label>
+    <div class="row"><button class="warn" onclick="bonus('Kino')">🎬 Kino</button><button class="warn" onclick="bonus('Erlebnisbad')">🏊 Erlebnisbad</button>
+      <button class="warn" onclick="bonus('Einkaufszentrum')">🛍️ Einkaufszentrum</button><button class="warn" onclick="bonus('Feuerwehr')">🚒 Feuerwehr</button></div>
+    <label class="sm">Als Zuschauer schreiben (Test)</label>
+    <div class="row"><input id="caName" placeholder="Name" value="testzuschauer" style="width:130px"><input id="caText" class="grow" placeholder="Nachricht"><button onclick="post('chat-as',{name:$('caName').value,text:$('caText').value})">Senden</button></div>
+    <div class="row"><button class="warn" onclick="post('tiktok/reconnect')">🔌 TikTok neu verbinden</button></div>
+  </section>
+
+  <section class="wide">
+    <h2>💬 Chat (letzte 40)</h2>
+    <div class="log" id="chat"></div>
+  </section>
+  <section class="wide">
+    <h2>📜 Protokoll</h2>
+    <div class="log" id="log"></div>
+  </section>
+</main>
+<div id="toast"></div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+function toast(t, err) { const e = $('toast'); e.textContent = t; e.className = 'show' + (err ? ' err' : ''); clearTimeout(e._t); e._t = setTimeout(() => e.className = '', 2200); }
+async function post(p, body = {}) {
+  try {
+    const r = await fetch('/api/admin/' + p, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.status);
+    toast('✓ ' + p.split('/')[0]); refresh(); return j;
+  } catch (e) { toast('✗ ' + e.message, true); }
+}
+function say() { const t = $('sayText').value.trim(); if (!t) return; post('say', { text: t }); }
+$('sayText').addEventListener('keydown', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); say(); } });
+function bonus(n) { if (confirm(n + ' jetzt bauen? Das belegt 4 freie Grundstücke.')) post('bonus/' + n); }
+async function mcCmd() { const j = await post('mc', { cmd: $('mccmd').value }); if (j) $('mcout').textContent = j.reply || '(keine Antwort)'; }
+
+const QUICK = [
+  'Hallo an alle neuen Zuschauer! Schreib Haus in den Chat und du kriegst ein eigenes Haus!',
+  'Danke für die vielen Likes, ihr seid der Hammer!',
+  'Schreib tierpark, dann zeig ich dir alle Haustiere!',
+  'Schreib flagge und dein Land, dann weht deine Fahne im Garten!',
+  'Gleich kommt eine Abstimmung, seid bereit!',
+  'Wer ist schon am längsten dabei? Schreibt es in den Chat!',
+  'Woher kommt ihr alle? Schreibt euer Land in den Chat!',
+  'Kurze Pause, ich bin gleich wieder da!',
+];
+$('quick').innerHTML = QUICK.map((q, i) => `<button title="${esc(q)}" onclick="$('sayText').value=QUICK[${i}];say()">${esc(q.split(/[!?,]/)[0].slice(0, 32))}</button>`).join('');
+$('events').innerHTML = ['Tornado', 'Meteorregen', 'Tsunami', 'Feuerwerk-Show', 'Regenbogen', 'Schneesturm', 'Party']
+  .map((e) => `<button onclick="post('event/${e}')">${e}</button>`).join('');
+$('shows').innerHTML = [['spotlight', '🔦 Spotlight'], ['train', '🚂 Zug'], ['plane', '✈️ Flugzeug'], ['plazaDisco', '🪩 Disco'], ['fireworks', '🎆 Feuerwerk'], ['nightLights', '🌙 Lichter'], ['windmill', 'Windmühle'], ['pyramid', 'Pyramide']]
+  .map(([k, n]) => `<button onclick="post('show/${k}')">${n}</button>`).join('');
+
+const mmss = (t) => { const s = Math.max(0, Math.round((t - Date.now()) / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+let volInit = false;
+async function refresh() {
+  try {
+    const s = await (await fetch('/api/admin/status')).json();
+    const live = /verbunden/.test(s.tiktok);
+    $('sTik').textContent = live ? '🔴 LIVE' : 'TikTok: ' + s.tiktok.slice(0, 40); $('sTik').className = 'pill ' + (live ? 'ok' : 'bad');
+    $('sMc').textContent = s.minecraft ? 'Minecraft ✓' : 'Minecraft ✗'; $('sMc').className = 'pill ' + (s.minecraft ? 'ok' : 'bad');
+    $('sAct').textContent = `aktiv: ${s.active}`; $('sLikes').textContent = `Likes: ${s.likes.toLocaleString('de-DE')}`;
+    $('sQueue').textContent = `Warteschlange: ${s.queue}${s.busy ? ' ⚙️' : ''}`;
+    $('sNext').textContent = s.duel ? '⚔️ Duell läuft' : s.vote ? '🗳️ Abstimmung läuft' : s.sprint ? '🏗️ Sprint läuft' : `⚔️ ${mmss(s.next.duel)} · 🗳️ ${mmss(s.next.vote)} · 🏗️ ${mmss(s.next.sprint)}`;
+    $('sNext').className = 'pill' + (s.duel || s.vote || s.sprint ? ' hot' : '');
+    const c = s.community;
+    $('comm').innerHTML = c ? `<div><b>${esc(c.name)}</b> – ${c.progress.toLocaleString('de-DE')} / ${c.goal.toLocaleString('de-DE')}</div><div class="bar"><i style="width:${Math.min(100, 100 * c.progress / c.goal)}%"></i></div><br>` : '';
+    if (s.music && !volInit) { $('vol').value = s.music.volume; $('volv').textContent = Math.round(s.music.volume * 100) + ' %'; volInit = true; }
+    const box = (id, lines) => { const e = $(id), atEnd = e.scrollTop + e.clientHeight >= e.scrollHeight - 20; e.innerHTML = lines.map((l) => `<div class="${/\[Befehl\]/.test(l) ? 'cmd' : /\[Geschenk\]/.test(l) ? 'gift' : ''}">${esc(l)}</div>`).join(''); if (atEnd) e.scrollTop = e.scrollHeight; };
+    box('chat', s.chat); box('log', s.log);
+  } catch { $('sTik').textContent = 'Spielprogramm nicht erreichbar'; $('sTik').className = 'pill bad'; }
+}
+async function players() {
+  const list = await (await fetch('/api/admin/players?q=' + encodeURIComponent($('pq').value))).json();
+  $('ptab').innerHTML = list.map((p) => `<tr onclick="$('pName').value='${esc(p.name)}';$('camName').value='${esc(p.name)}'"><td>${esc(p.name)}</td><td>${p.level}</td><td>${p.points}</td><td>${p.plot ?? '–'}</td></tr>`).join('');
+}
+refresh(); players(); setInterval(refresh, 3000);
+</script>
+</body>
+</html>

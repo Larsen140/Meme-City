@@ -54,25 +54,46 @@ export async function spawnZoo(mc, x, z) {
     const { x: cx, z: cz } = penCenter(x, z, n);
     if (MODELS[a.kind]) await summonModel(mc, a.kind, cx - 0.5, cz - 0.5, 0, 'zoo', a.name);
     else await mc.send(`summon ${a.kind} ${cx} ${BASE} ${cz} {Tags:["mc_zoo"],PersistenceRequired:1b,NoAI:1b,Silent:1b,Invulnerable:1b,Rotation:[0f,0f]}`);
-    await mc.send(`summon text_display ${cx} ${BASE + 3.3} ${cz + 1.5} {Tags:["mc_zoo"],billboard:"center",background:-1072558032,brightness:{sky:15,block:15},` +
+    await mc.send(`summon text_display ${cx} ${BASE + (MODELS[a.kind] ? MODELS[a.kind].top * MODELS[a.kind].S + 0.7 : 2.4)} ${cz} {Tags:["mc_zoo"],billboard:"center",background:-1072558032,brightness:{sky:15,block:15},` +
       `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[1.2f,1.2f,1.2f]},` +
       `text:{text:${q(a.name + '\n')},color:"#FFC93C",bold:true,extra:[{text:${q('haustier ' + a.key)},color:"#3DF5B0",bold:false}]}}`);
   }
   await mc.send('kill @e[type=item]');
 }
 
-/** Kamera-Tour: erst Ueberblick, dann jede Reihe entlang (jedes Tier ist zu sehen) */
-export async function zooTour(builder, x, z, onRow) {
-  const rows = Math.ceil(zooAnimals().length / COLS);
-  await builder.camera(x, BASE + 26, z + 34, x, BASE, z, undefined);
-  await new Promise((r) => setTimeout(r, 3000));
-  for (let j = 0; j < rows; j++) {
-    const rz = z - HALF_W + CELL * j + 3;
-    const xa = x - HALF_W + 3, xb = x - HALF_W + CELL * (COLS - 1) + 3;
-    onRow?.(j);
-    await builder.camera(xa - 2, BASE + 6, rz + 8, xa, BASE + 1, rz, 1.4);
-    await builder.camera(xb + 2, BASE + 6, rz + 8, xb, BASE + 1, rz, 5);
+/**
+ * Kamera-Tour: Ueberblick, dann eine weiche Schlangenlinie an allen Gehegen vorbei.
+ * Vor jedem Tier wird kurz abgebremst, damit man es und sein Schild gut sieht.
+ */
+export async function zooTour(builder, x, z, onAnimal, perAnimal = 1.35) {
+  const list = zooAnimals();
+  const order = [];
+  for (let j = 0; j * COLS < list.length; j++) {
+    const row = [];
+    for (let i = 0; i < COLS && j * COLS + i < list.length; i++) row.push(j * COLS + i);
+    order.push(...(j % 2 ? row.reverse() : row));
   }
-  await builder.camera(x, BASE + 26, z + 34, x, BASE, z, 2.5);
-  await new Promise((r) => setTimeout(r, 2000));
+  const pts = order.map((n) => penCenter(x, z, n));
+  const H = 6, D = 4.5; // Kamera schraeg von oben vor dem Gehege, Schild steht hinter dem Tier
+  const smoother = (f) => f * f * f * (f * (6 * f - 15) + 10);
+  // 1. Ueberblick von vorne oben
+  await builder.camera(x, BASE + 24, z + 32, x, BASE, z);
+  await new Promise((r) => setTimeout(r, 2500));
+  // 2. weich herunter zum ersten Tier
+  await builder.camera(pts[0].x, BASE + H, pts[0].z + D, pts[0].x, BASE + 0.6, pts[0].z, 2.2);
+  onAnimal?.(list[order[0]]);
+  // 3. an allen Tieren vorbei
+  let last = 0;
+  await builder.cameraTrack(perAnimal * (pts.length - 1), (t) => {
+    const s = t * (pts.length - 1), k = Math.min(pts.length - 2, Math.floor(s)), e = smoother(s - k);
+    const a = pts[k], b = pts[k + 1];
+    const px = a.x + (b.x - a.x) * e, pz = a.z + (b.z - a.z) * e;
+    const near = e < 0.5 ? k : k + 1;
+    if (near !== last) { last = near; onAnimal?.(list[order[near]]); }
+    return { cam: { x: px, y: BASE + H, z: pz + D }, look: { x: px, y: BASE + 0.6, z: pz } };
+  });
+  await new Promise((r) => setTimeout(r, 1200));
+  // 4. zurueck in den Ueberblick
+  await builder.camera(x, BASE + 24, z + 32, x, BASE, z, 2.5);
+  await new Promise((r) => setTimeout(r, 1500));
 }

@@ -243,11 +243,11 @@ export class Game {
   }
 
   /** Chat "tierpark": Kamera-Tour durch alle Gehege */
-  zooTourCmd(p) {
+  zooTourCmd(p, force = false) {
     const site = this.store.data.bigSites?.['bonus:Tierpark'];
     if (!site?.built) return this.ack(p, '🦁 Der Tierpark wird noch gebaut');
     if (this.builder.queue.some((j) => j.zoo)) return this.ack(p, '🦁 Tour kommt gleich – schon in der Warteschlange');
-    if (Date.now() - (this._zooAt || 0) < 90_000) return this.ack(p, '🦁 Tour lief gerade – gleich nochmal');
+    if (!force && Date.now() - (this._zooAt || 0) < 90_000) return this.ack(p, '🦁 Tour lief gerade – gleich nochmal');
     this._zooAt = Date.now();
     this.ack(p, '🦁 Tierpark-Tour startet gleich!');
     this.broadcast({ type: 'ticker', text: `🦁 @${p.name} startet die Tierpark-Tour!`, highlight: true });
