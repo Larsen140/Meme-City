@@ -26,14 +26,16 @@ export const PAGES = [
     line('▶ 10.000 Likes', '  = eigenes Auto', '#4CC9FF'),
     line('■ Jeder Punkt', '  baut am Gemeinschaftsbau mit', '#FFC93C'),
   ]),
-  // Nur Information: was ein Geschenk bewirkt (keine Aufforderung, keine Extra-Effekte)
-  comp('GESCHENKE', '#FFC93C', [
-    line('Rose', '  1 Münze = 1 Punkt', '#FF6FAE'),
-    line('Fingerherz', '  5 Münzen = 5 Punkte', '#FF6FAE'),
-    line('Donut', '  30 Münzen = 30 Punkte', '#FFC93C'),
-    line('Jedes Geschenk', '  zählt fürs eigene Haus', '#3DF5B0'),
-    line('Im Duell', '  1 Münze zählt wie 10 Likes', '#4CC9FF'),
-    line('Und immer:', '  Likes und Chat zählen auch!', '#FFFFFF'),
+  // Was ein Geschenk in der Stadt bewirkt (Effekte aus giftfx.js)
+  comp('GESCHENKE IN MEME CITY', '#FFC93C', [
+    line('Rose', '  Herzen + Rosen im Garten', '#FF6FAE'),
+    line('Fingerherz', '  Herz-Show über dem Haus', '#FF6FAE'),
+    line('Donut', '  Riesen-Donut am Haus', '#FFC93C'),
+    line('Hund / Katze / Panda', '  Tier besucht dich', '#3DF5B0'),
+    line('Feuerwerk / Rakete', '  Rakete über dem Haus', '#4CC9FF'),
+    line('Auto / Flugzeug / Zug', '  fährt bei dir vorbei', '#4CC9FF'),
+    line('ab 1.000 Münzen', '  eigene Statue am Platz', '#FFC93C'),
+    line('1 Münze', '  = 1 Punkt fürs Haus', '#FFFFFF'),
   ]),
 ];
 const BG = [-1072558032, -1070591936, -1070587904];
@@ -42,7 +44,7 @@ const tr = (s, rot = 0) => `transformation:{left_rotation:[0f,${Math.sin(rot / 2
 
 export class Board {
   constructor(mc, log = console.log, everyMs = 15_000) {
-    this.mc = mc; this.log = log; this.page = 0;
+    this.mc = mc; this.log = log; this.page = 0; this.every = everyMs;
     this.start().catch((e) => log('[Tafel] ' + e.message));
     this.timer = setInterval(() => this.next().catch(() => {}), everyMs);
   }
@@ -51,6 +53,14 @@ export class Board {
     await this.mc.send(`kill @e[tag=${TAG}]`);
     await this.mc.send(`summon text_display 0 ${Y} 0 {Tags:["${TAG}"],billboard:"center",alignment:"left",background:-1072558032,shadow:1b,` +
       `line_width:400,brightness:{sky:15,block:15},view_range:6f,${tr(SCALE)},text:${PAGES[0]}}`);
+  }
+
+  /** Eine bestimmte Seite zeigen (fuer den Kameraflug) und den Wechsel-Takt neu starten */
+  async show(i) {
+    clearInterval(this.timer);
+    this.page = (i - 1 + PAGES.length) % PAGES.length;
+    await this.next();
+    this.timer = setInterval(() => this.next().catch(() => {}), this.every);
   }
 
   /** Umblaettern: zusammenklappen, Text tauschen, wieder aufspringen */

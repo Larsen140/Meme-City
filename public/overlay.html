@@ -359,6 +359,13 @@
   #comm { padding: 10px 12px !important; }
   #comm .ptitle { font-size: 17px !important; } #comm .cname { font-size: 24px !important; margin: 0 0 2px !important; }
   #comm .nums { font-size: 19px !important; } #comm .bar { height: 18px !important; margin-top: 4px; }
+  /* Kamerawechsel wie in GTA: dunkler Rand und weisser Blitz */
+  #gta { position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 40;
+    background: radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(0,0,0,.6) 100%); }
+  #gta.go { animation: gtaVig 3.6s ease forwards; }
+  @keyframes gtaVig { 0% { opacity: 0; } 10% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
+  #gta.flash::after { content: ''; position: absolute; inset: 0; background: #fff; animation: gtaFlash .4s ease-out forwards; }
+  @keyframes gtaFlash { 0% { opacity: .75; } 100% { opacity: 0; } }
   #cars { padding: 10px 12px; }
   #cars .ptitle { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
   #cars .cr { display: flex; align-items: center; gap: 7px; font-size: 19px; font-weight: 800; margin-top: 5px; }
@@ -429,6 +436,7 @@
 <div id="almost"></div>
 <div id="levelup"><div class="burst"></div><div class="lv-card"><div class="lv-top"></div><div class="lv-num"></div><div class="lv-name"></div><div class="lv-who"></div></div></div>
 
+<div id="gta"></div>
 <div id="acks"></div>
 <div id="player" class="panel"></div>
 <div id="likestats" class="panel"></div>
@@ -704,6 +712,11 @@ function nextTicker() {
 nextTicker();
 
 // ---------- Sofort-Rueckmeldung ----------
+function gtaFx(phase) {
+  const el = $('gta');
+  if (phase === 'up') { el.className = ''; void el.offsetWidth; el.className = 'go flash'; }
+  else { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
+}
 function showCars(c) {
   const el = $('cars');
   const k = (n) => n >= 1000 ? (Math.floor(n / 100) / 10).toLocaleString('de-DE') + 'k' : String(n);
@@ -880,6 +893,7 @@ function connect() {
     else if (m.type === 'likestats') showLikeStats(m);
     else if (m.type === 'goal') showGoal(m);
     else if (m.type === 'cars') showCars(m);
+    else if (m.type === 'gta') gtaFx(m.phase);
     // Top-Unterstuetzer-Tafel abgeschaltet (zeigte Coins)
     else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);

@@ -48,6 +48,7 @@ export class Game {
         if (!ev.instant) this.broadcast({ type: 'levelup', name: ev.player.name, avatar: ev.player.avatar, level: ev.level, levelName: levelInfo(ev.level).name, first: ev.level === 1 });
       }
       if (ev.type === 'showHouse') this.broadcast({ type: 'player', card: this.card(ev.player) });
+      if (ev.type === 'gta') this.broadcast({ type: 'gta', phase: ev.phase });
     };
 
     speech.onStart = (text) => this.broadcast({ type: 'speak', text, on: true });
@@ -423,12 +424,13 @@ export class Game {
     this.claimHouse(p, 'gift');
     this.addPoints(p, coins / this.coinsPerPoint);
     const n = spoken(p);
-    // Schlichtes Danke ohne Geschenkname, Geschenkbild und Groessen-Unterschied (TikTok wertet Geschenk-Automatik als Aufforderung)
-    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: 'Schön, dass du da bist 💛', avatar: p.avatar });
+    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: `${gift.count > 1 ? gift.count + 'x ' : ''}${gift.name}`, avatar: p.avatar, gift: gift.image, big: coins >= 100 });
+    this.broadcast({ type: 'confetti', amount: Math.min(200, 20 + coins) });
     this.broadcast({ type: 'player', card: this.card(p) });
     // Kurzes Danke ohne Geschenknamen und nicht bei jedem Geschenk (TikTok wertet Dauer-Ansagen als Aufforderung)
     if (!this.speech.speaking && !this.speech.queue.length && Math.random() < 0.5) this.speech.say(pick([`Danke, ${n}!`, `${n}, du bist klasse!`, `Merci, ${n}!`]));
-    // keine automatischen Effekte mehr, die direkt an ein Geschenk gekoppelt sind (TikTok: mechanisches Auffordern)
+    // Effekt am Haus des Schenkers (auf Wunsch von Larsen wieder an)
+    if (this.giftFx) this.giftFx.run(p, gift, coins); else this.giftEffect(p, coins);
     this.pushState();
     this.store.save();
   }
@@ -517,7 +519,9 @@ export class Game {
     const b = this.builder, fx = this.giftFx;
     const houses = this.ranking();
     const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights', 'windmill', 'pyramid'];
-    const show = force || shows[Math.floor(Math.random() * shows.length)];
+    // jede zweite Show fliegt zur grossen Tafel am Stadtplatz (Geschenke-Seite zuerst)
+    this._showN = (this._showN || 0) + 1;
+    const show = force || (this._showN % 2 === 0 && this.board ? 'board' : shows[Math.floor(Math.random() * shows.length)]);
     const rnd = houses[Math.floor(Math.random() * houses.length)];
     if (show === 'spotlight' && rnd && fx) {
       // Spotlight auf ein zufaelliges Haus mit einem kleinen Effekt
@@ -536,6 +540,15 @@ export class Game {
       if (busy()) return;
       if (show === 'train') await fx.vehicle(x, z, fr, 'train');
       else await fx.plane(x, rnd.top ?? BASE_Y + 10, z, fr);
+    } else if (show === 'board' && this.board) {
+      // Kamera vor die Tafel, erst die Geschenke-Seite, dann die Befehle
+      await b.camera(0, BASE_Y + 18, 26, 0, BASE_Y + 16, 0, 3, true);
+      if (busy()) return;
+      await this.board.show(2);
+      await b.waitIdle(9000, busy);
+      if (busy()) return;
+      await this.board.show(0);
+      await b.waitIdle(7000, busy);
     } else if (show === 'plazaDisco') {
       this.broadcast({ type: 'ticker', text: '🪩 Disco auf dem Stadtplatz!' });
       await b.camera(0, BASE_Y + 12, 30, 0, BASE_Y + 3, 0, 3, true);

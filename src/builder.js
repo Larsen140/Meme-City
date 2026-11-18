@@ -148,7 +148,7 @@ export class Builder {
   }
 
   /** Fliegt die Kamera weich nach (x, y, z) mit Blick auf (lx, ly, lz). */
-  async camera(x, y, z, lx, ly, lz, seconds, abortable = false) {
+  async camera(x, y, z, lx, ly, lz, seconds, abortable = false, noArc = false) {
     [x, y, z, lx, ly, lz] = [x, y, z, lx, ly, lz].map(Number);
     await this.ensureCamera();
     const from = { ...this.cam };
@@ -158,7 +158,7 @@ export class Builder {
     const dist = Math.hypot(to.x - from.x, to.y - from.y, to.z - from.z);
     const dur = seconds ?? Math.min(3.5, Math.max(1.2, dist / 35 + Math.abs(dYaw) / 200));
     const steps = Math.max(1, Math.round((dur * 20) / CAM_STEP_TICKS));
-    const arc = Math.min(25, dist * 0.18); // bei weiten Fluegen leicht nach oben ausholen
+    const arc = noArc ? 0 : Math.min(25, dist * 0.18); // bei weiten Fluegen leicht nach oben ausholen
     const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     // Zeitgesteuert (nicht schrittgezaehlt): kleine Verzoegerungen beim Senden bremsen den Flug nicht aus
     const start = Date.now(), total = steps * CAM_STEP_TICKS * 50;
@@ -212,7 +212,30 @@ export class Builder {
     const fr = frontOf(cx, cz), k = inward ? -1 : 1;
     const side = dist * 0.35;
     const x = cx + fr.dx * dist * k + (fr.dz ? side : 0), z = cz + fr.dz * dist * k + (fr.dx ? side : 0);
-    await this.camera(x, camY, z, cx, targetY, cz, seconds, abortable);
+    // Weiter Flug zu einem Zuschauerhaus: Wechsel wie in GTA (hoch, rueber, runter). Drohnenfluege nicht.
+    const far = this.cam && Math.hypot(this.cam.x - cx, this.cam.z - cz) > 70;
+    if (far && !abortable) await this.gtaSwitch(x, camY, z, cx, targetY, cz);
+    else await this.camera(x, camY, z, cx, targetY, cz, seconds, abortable);
+  }
+
+  /** Kamerawechsel wie in GTA: steil in den Himmel, ueber die Stadt gleiten, auf das Ziel herabstuerzen. */
+  async gtaSwitch(x, y, z, lx, ly, lz) {
+    await this.ensureCamera();
+    const H = BASE + 115, c = this.cam;
+    const fwd = (yaw) => ({ dx: -Math.sin((yaw * Math.PI) / 180), dz: Math.cos((yaw * Math.PI) / 180) });
+    const f0 = fwd(c.yaw), f1 = fwd((Math.atan2(-(lx - x), lz - z) * 180) / Math.PI);
+    const whoosh = (p) => this.mc.send(`execute at @e[tag=mc_cam,limit=1] run playsound minecraft:entity.breeze.wind_burst master @a ~ ~ ~ 1.5 ${p}`);
+    this.onEvent({ type: 'gta', phase: 'up' });
+    await whoosh(0.7);
+    // 1. senkrecht hoch, Blick nach unten
+    await this.camera(c.x, H, c.z, c.x + f0.dx * 0.6, BASE, c.z + f0.dz * 0.6, 0.9, false, true);
+    // 2. ueber die Stadt zum Ziel gleiten, schon in die spaetere Blickrichtung gedreht
+    await this.camera(lx - f1.dx * 2, H, lz - f1.dz * 2, lx, BASE, lz, 1.3);
+    this.onEvent({ type: 'gta', phase: 'down' });
+    await whoosh(1.1);
+    // 3. herabstuerzen in die normale Einstellung
+    await this.camera(x, y, z, lx, ly, lz, 1.1, false, true);
+    await this.mc.send(`execute at @e[tag=mc_cam,limit=1] run playsound minecraft:entity.generic.explode master @a ~ ~ ~ 0.25 1.6`);
   }
 
   async cameraOverview() {
