@@ -7,6 +7,23 @@ import {
 import { levelInfo } from './levels.js';
 import { snbtString, sleep } from './minecraft.js';
 
+/**
+ * Gut lesbares Schild (Hologramm): dunkler, fast deckender Hintergrund, Schatten,
+ * immer volle Helligkeit (auch im Schatten), dreht sich zur Kamera.
+ */
+export function signCommand(x, y, z, tags, scale, text) {
+  return `summon text_display ${x} ${y} ${z} {Tags:[${tags.map((t) => '"' + t + '"').join(',')}],billboard:"center",` +
+    `background:-1341124576,shadow:1b,line_width:300,brightness:{sky:15,block:15},view_range:4f,` +
+    `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[${scale}f,${scale}f,${scale}f]},` +
+    `text:${text}}`;
+}
+
+/** Schild "FREI" ueber einem freien Grundstueck. */
+export function freeSignCommand(cx, cz, n) {
+  return signCommand(cx, BASE + 4, cz, [`mc_plot_${n}`, 'mc_plot'], 3.5,
+    `{text:"FREI\\n",color:"#55FF7F",bold:true,extra:[{text:"Grundstück ${n + 1}",color:"#FFFFFF",bold:true}]}`);
+}
+
 const CAM_STEP_TICKS = 2; // alle 2 Ticks (0,1 s) ein Kameraschritt
 const COLORS = [0xff4d4d, 0xffd84d, 0x4dff88, 0x4dc3ff, 0xc34dff, 0xff8a00, 0xffffff];
 
@@ -125,9 +142,7 @@ export class Builder {
     ]);
     await mc.sendAll(plazaCommands());
     await mc.send('kill @e[tag=mc_title]');
-    await mc.send(`summon text_display 0 ${BASE + 7} 0 {Tags:["mc_title"],billboard:"center",background:0,shadow:1b,` +
-      `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[5f,5f,5f]},` +
-      `text:{text:"MEME CITY",color:"gold",bold:true}}`);
+    await mc.send(signCommand(0, BASE + 8, 0, ['mc_title'], 6, '{text:"MEME CITY",color:"#FFC93C",bold:true}'));
     await mc.send('kill @e[type=item]');
   }
 
@@ -144,9 +159,7 @@ export class Builder {
       await mc.sendAll(freePlotDecoration(cx, cz, n));
       await mc.sendAll([
         `kill @e[tag=mc_plot_${n}]`,
-        `summon text_display ${cx} ${BASE + 3} ${cz} {Tags:["mc_plot_${n}","mc_plot"],billboard:"center",background:1426063360,` +
-          `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[2.5f,2.5f,2.5f]},` +
-          `text:{text:"FREI\\n",color:"green",bold:true,extra:[{text:"Grundstück ${n + 1}",color:"white",bold:false}]}}`,
+        freeSignCommand(cx, cz, n),
       ]);
       await mc.send('kill @e[type=item]');
       await mc.send(`forceload remove ${a} ${e} ${b} ${f}`);
@@ -162,9 +175,8 @@ export class Builder {
     await this.mc.send(`kill @e[tag=${tag}]`);
     const name = snbtString(`@${player.name}\n`);
     const line = snbtString(`Stufe ${player.level} · ${info.name}`);
-    await this.mc.send(`summon text_display ${x} ${top + 3} ${z} {Tags:["${tag}","mc_plot"],billboard:"center",background:1426063360,` +
-      `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[2.5f,2.5f,2.5f]},` +
-      `text:{text:${name},color:"gold",bold:true,extra:[{text:${line},color:"white",bold:false}]}}`);
+    await this.mc.send(signCommand(x, top + 4, z, [tag, 'mc_plot'], 3.5,
+      `{text:${name},color:"#FFD84D",bold:true,extra:[{text:${line},color:"#FFFFFF",bold:true}]}`));
   }
 
   // ---------- Effekte ----------
@@ -266,9 +278,7 @@ export class Builder {
       await sleep(200);
     }
     await this.mc.send(`kill @e[tag=mc_comm_${index}]`);
-    await this.mc.send(`summon text_display ${cell.x} ${plan.top + 3} ${cell.z} {Tags:["mc_comm_${index}"],billboard:"center",` +
-      `transformation:{left_rotation:[0f,0f,0f,1f],right_rotation:[0f,0f,0f,1f],translation:[0f,0f,0f],scale:[3f,3f,3f]},` +
-      `text:{text:${snbtString(name)},color:"aqua",bold:true}}`);
+    await this.mc.send(signCommand(cell.x, plan.top + 4, cell.z, [`mc_comm_${index}`], 4, `{text:${snbtString(name)},color:"#5CE1FF",bold:true}`));
     await this.fireworkShow(cell.x, cell.z, 12, 7);
     await sleep(3000);
   }
