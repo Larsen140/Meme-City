@@ -57,8 +57,17 @@ export class Builder {
   }
 
   async cameraAtPlot(cx, cz, height) {
-    const dist = 16 + Math.round(height * 0.5);
-    await this.camera(cx + 6, BASE + Math.round(height * 0.6) + 6, cz + dist, cx, BASE + Math.round(height * 0.45), cz);
+    // Kamera schaut immer von aussen (weg vom Stadtplatz) auf das Haus, etwas von oben,
+    // so dass Haus und Namensschild im freien Mittelfeld des Hochformat-Streams liegen.
+    // Werte an Bildschirmfotos abgestimmt: kleine Haeuser steiler von oben, Hochhaeuser flacher.
+    const t = Math.max(0, Math.min(1, (height - 14) / 30));
+    const lerp = (a, b) => a + (b - a) * t;
+    const dist = lerp(1.5 * Math.max(height + 4, 15), height + 4);
+    const targetY = BASE + height * lerp(0.25, 0.6);
+    const camY = Math.max(BASE + 14, targetY + dist * lerp(0.53, 0.17));
+    const len = Math.hypot(cx, cz) || 1;
+    const x = cx + (cx / len) * dist, z = cz + (cz / len) * dist;
+    await this.camera(x.toFixed(1), camY.toFixed(1), z.toFixed(1), cx, targetY.toFixed(1), cz);
   }
 
   async cameraOverview() {

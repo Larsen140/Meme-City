@@ -218,10 +218,12 @@ export function scaffoldCommands(cx, cz, house, top) {
   for (const [x, z] of [[house.x1 - 1, house.z1 - 1], [house.x2 + 1, house.z1 - 1], [house.x1 - 1, house.z2 + 1], [house.x2 + 1, house.z2 + 1]]) {
     c.push(`fill ${x} ${BASE} ${z} ${x} ${top} ${z} oak_fence keep`);
   }
-  const kx = cx + HALF, kz = cz - HALF, ky = top + 4;
+  // Kran auf der Seite zum Stadtplatz hin (die Kamera schaut von aussen, so steht er nicht im Bild)
+  const sx = cx > 0 ? 1 : -1, sz = cz > 0 ? 1 : -1;
+  const kx = cx - sx * HALF, kz = cz - sz * HALF, ky = top + 4, hx = cx - sx * 2;
   c.push(`fill ${kx} ${BASE} ${kz} ${kx} ${ky} ${kz} yellow_concrete`);
-  c.push(`fill ${cx - 2} ${ky} ${kz} ${kx} ${ky} ${kz} yellow_concrete`);
-  c.push(`fill ${cx - 2} ${ky - 3} ${kz} ${cx - 2} ${ky - 1} ${kz} iron_chain`);
+  c.push(`fill ${Math.min(kx, hx)} ${ky} ${kz} ${Math.max(kx, hx)} ${ky} ${kz} yellow_concrete`);
+  c.push(`fill ${hx} ${ky - 3} ${kz} ${hx} ${ky - 1} ${kz} iron_chain`);
   return c;
 }
 
@@ -277,8 +279,8 @@ export function communityPlan(name, cx, cz) {
     p.set(cx, BASE, cz, 'white_wool');
   } else if (name === 'Freibad') {
     p.fill(cx - 7, GROUND, cz - 7, cx + 7, GROUND, cz + 7, 'smooth_quartz');
-    p.fill(cx - 5, GROUND - 2, cz - 5, cx + 5, GROUND, cz + 5, 'water');
-    p.fill(cx - 5, GROUND - 3, cz - 5, cx + 5, GROUND - 3, cz + 5, 'light_blue_concrete');
+    p.add(GROUND, `fill ${cx - 5} ${GROUND - 2} ${cz - 5} ${cx + 5} ${GROUND} ${cz + 5} water`);
+    p.add(GROUND, `fill ${cx - 5} ${GROUND - 3} ${cz - 5} ${cx + 5} ${GROUND - 3} ${cz + 5} light_blue_concrete`);
     p.fill(cx + 6, BASE, cz - 6, cx + 6, BASE + 3, cz - 6, 'white_concrete');
     p.fill(cx + 5, BASE + 3, cz - 6, cx + 6, BASE + 3, cz - 6, 'white_concrete');
     for (const [x, z] of [[cx - 6, cz + 6], [cx + 6, cz + 6]]) p.set(x, BASE, z, 'red_bed[part=foot,facing=north]');
