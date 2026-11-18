@@ -1,6 +1,6 @@
 // Spiel-Logik: Zuschauer, Haeuser, Punkte, Stufen, Bestenliste, Buergermeister-Sprueche.
 import { LEVELS, MAX_LEVEL, levelForPoints, pointsForLevel, levelInfo } from './levels.js';
-import { COMMUNITY_PROJECTS, plotCenter } from './city.js';
+import { COMMUNITY_PROJECTS, plotCenter, frontOf, BASE as BASE_Y } from './city.js';
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const fmt = (n) => Math.round(n).toLocaleString('de-DE');
@@ -25,6 +25,7 @@ export class Game {
     this.checkedNoHouse = new Set();
 
     builder.housesProvider = () => this.ranking();
+    builder.idleShow = (busy) => this.idleShow(busy);
     builder.onEvent = (ev) => {
       if (ev.type === 'tourHouse') {
         this.broadcast({ type: 'player', card: this.card(ev.player) });
@@ -395,6 +396,56 @@ export class Game {
   }
 
   // ---------- Leerlauf: Buergermeister erzaehlt was ----------
+
+  /** Kleine Shows, wenn gerade nichts passiert (vom Drohnenflug aufgerufen). */
+  async idleShow(busy) {
+    const b = this.builder, fx = this.giftFx;
+    const houses = this.ranking();
+    const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights'];
+    const show = shows[Math.floor(Math.random() * shows.length)];
+    const rnd = houses[Math.floor(Math.random() * houses.length)];
+    if (show === 'spotlight' && rnd && fx) {
+      // Spotlight auf ein zufaelliges Haus mit einem kleinen Effekt
+      const { x, z } = plotCenter(rnd.plot);
+      this.broadcast({ type: 'player', card: this.card(rnd) });
+      this.broadcast({ type: 'ticker', text: `🔦 Spotlight: das ${levelInfo(rnd.level).name} von @${rnd.name}` });
+      // (ohne Ansage – zu viele automatische Saetze wertet TikTok als nicht interaktiv)
+      await b.cameraAtPlot(x, z, Math.max((rnd.top ?? BASE_Y + 10) - BASE_Y, 10), false, 3, true);
+      if (busy()) return;
+      await fx.effect(pick(['sparkle', 'confetti', 'butterfly', 'disco', 'birds']), rnd, false);
+      await b.waitIdle(3500, busy);
+    } else if ((show === 'train' || show === 'plane') && rnd && fx) {
+      const { x, z } = plotCenter(rnd.plot);
+      const fr = frontOf(x, z);
+      await b.cameraAtPlot(x, z, 14, false, 3, true);
+      if (busy()) return;
+      if (show === 'train') await fx.vehicle(x, z, fr, 'train');
+      else await fx.plane(x, rnd.top ?? BASE_Y + 10, z, fr);
+    } else if (show === 'plazaDisco') {
+      this.broadcast({ type: 'ticker', text: '🪩 Disco auf dem Stadtplatz!' });
+      await b.camera(0, BASE_Y + 12, 30, 0, BASE_Y + 3, 0, 3, true);
+      if (busy()) return;
+      const cols = ['1.0,0.2,0.4', '0.2,0.9,1.0', '1.0,0.9,0.2', '0.6,1.0,0.3', '0.8,0.4,1.0'];
+      for (let i = 0; i < 20 && !busy(); i++) {
+        await b.mc.send(`particle minecraft:dust{color:[${cols[i % cols.length]}],scale:3.0} 0 ${BASE_Y + 4} 0 9 3 9 0 90 force`);
+        if (i % 2 === 0) await b.mc.send(`playsound minecraft:block.note_block.bass master @a 0 ${BASE_Y} 0 1.5 ${[0.6, 0.8, 1, 0.8][i % 4]}`);
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    } else if (show === 'fireworks') {
+      await b.camera(0, BASE_Y + 30, 60, 0, BASE_Y + 12, 0, 3, true);
+      if (busy()) return;
+      await b.fireworkShow(0, 0, 8, 25);
+      await b.waitIdle(2000, busy);
+    } else if (show === 'nightLights') {
+      // kurz Abend: die Laternen der Stadt leuchten
+      this.broadcast({ type: 'ticker', text: '🌙 Abendstimmung in Meme City' });
+      await b.mc.send('time set 13000');
+      await b.camera(0, BASE_Y + 45, 80, 0, BASE_Y, 0, 4, true);
+      await b.fireworkShow(0, 0, 4, 30);
+      await b.waitIdle(6000, busy);
+      await b.mc.send('time set noon');
+    }
+  }
 
   idle() {
     if (this.speech.speaking || this.speech.queue.length || this.builder.busy) return;

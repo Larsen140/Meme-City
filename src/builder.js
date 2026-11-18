@@ -79,6 +79,12 @@ export class Builder {
       await sleep(1500);
       while (!busy()) {
         const kind = step++ % 6;
+        // Jede zweite Runde eine kleine Show in der Stadt statt nur Flug
+        if (step % 2 === 0 && this.idleShow) {
+          try { await this.idleShow(busy); } catch (e) { this.log('[Show] ' + e.message); }
+          await this.waitIdle(1500, busy);
+          continue;
+        }
         if (kind === 0 || kind === 3) {
           // langsame Runde um den Stadtplatz
           const start = Math.random() * Math.PI * 2;
