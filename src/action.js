@@ -448,6 +448,7 @@ export class Action {
     const s = this.game.state().community;
     if (!s) return;
     this.sprint = Date.now() + 60_000;
+    this.game.music?.hype(true);
     this.log('[Bau-Sprint] gestartet');
     this.speech.say(`Bau-Sprint! Eine Minute lang zählt alles doppelt für ${art(s.name, 'akk')}. Jeder Like und jede Nachricht baut mit!`, true);
     this.broadcast({ type: 'banner', title: '🏗️ BAU-SPRINT x2!', text: `1 Minute zählt alles doppelt für ${art(s.name, 'akk')}`, big: true });
@@ -455,6 +456,7 @@ export class Action {
 
   endSprint() {
     this.sprint = null;
+    this.game.music?.hype(!!this.duel);
     const s = this.game.state().community;
     this.log('[Bau-Sprint] vorbei');
     if (s) this.speech.say(`Bau-Sprint vorbei! ${cap(art(s.name, 'nom'))} steht jetzt bei ${Math.floor((100 * s.progress) / s.goal)} Prozent.`);
@@ -658,6 +660,7 @@ export class Action {
 
   startDuel() {
     if (this.duel || this.raffle) return;
+    this.game.music?.hype(true);
     this.duel = { nord: 0, sued: 0, end: Date.now() + this.duelLength, fighters: new Map(), half: false, last10: false };
     this.speech.say('Achtung! Nord gegen Süd beginnt! Schreibt nord oder süd in den Chat und liked für euer Team!', true);
     this.broadcast({ type: 'banner', title: '⚔️ NORD GEGEN SÜD', text: 'Schreib „nord“ oder „süd“ und like für dein Team!', big: true });
@@ -690,6 +693,7 @@ export class Action {
   endDuel() {
     clearInterval(this.timer);
     const d = this.duel; this.duel = null;
+    this.game.music?.hype(!!this.sprint);
     const winner = d.nord === d.sued ? null : d.nord > d.sued ? 'nord' : 'sued';
     this.broadcast({ type: 'duel', end: true, nord: d.nord, sued: d.sued, winner });
     if (!winner) {

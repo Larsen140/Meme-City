@@ -13,12 +13,17 @@ $t = 0; while (-not $p.NaturalDuration.HasTimeSpan -and $t -lt 200) { Start-Slee
 $len = $p.NaturalDuration.TimeSpan.TotalMilliseconds
 $p.Volume = 0
 $p.Play()
-$cur = 0.0; $n = 0
+$cur = 0.0; $n = 0; $speed = 1.0
 while ($true) {
   # endet automatisch, wenn das Spielprogramm beendet wurde
   if (($n++ % 12) -eq 0 -and -not (Get-Process -Id ([int]$env:MC_PARENT) -ErrorAction SilentlyContinue)) { $p.Close(); break }
-  $want = 0.2
-  try { $want = [double]::Parse((Get-Content $env:MC_VOLFILE -Raw).Trim(), [Globalization.CultureInfo]::InvariantCulture) } catch {}
+  $want = 0.2; $sp = 1.0
+  try {
+    $parts = (Get-Content $env:MC_VOLFILE -Raw).Trim().Split(';')
+    $want = [double]::Parse($parts[0], [Globalization.CultureInfo]::InvariantCulture)
+    if ($parts.Length -gt 1) { $sp = [double]::Parse($parts[1], [Globalization.CultureInfo]::InvariantCulture) }
+  } catch {}
+  if ([math]::Abs($sp - $speed) -gt 0.001) { $speed = $sp; $p.SpeedRatio = $speed }
   $cur = $cur + ($want - $cur) * 0.25   # weich ein-/ausblenden
   $p.Volume = $cur
   if ($len -gt 0 -and $p.Position.TotalMilliseconds -ge $len - 120) { $p.Position = [TimeSpan]::Zero; $p.Play() }
@@ -43,6 +48,8 @@ export class Music {
     log('[Musik] Hintergrundmusik läuft');
   }
 
-  set(v) { try { fs.writeFileSync(this.volFile, String(v)); } catch {} }
-  duck(on) { this.set(on ? this.duckVolume : this.volume); }
+  set(v) { try { fs.writeFileSync(this.volFile, `${v};${this.hyped ? 1.1 : 1}`); } catch {} }
+  duck(on) { this.ducked = on; this.set(on ? this.duckVolume : this.hyped ? Math.min(1, this.volume * 1.7) : this.volume); }
+  /** Duell / Bau-Sprint: Musik lauter und etwas schneller */
+  hype(on) { this.hyped = on; this.duck(!!this.ducked); }
 }

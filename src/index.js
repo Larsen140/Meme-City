@@ -80,6 +80,7 @@ const music = new Music({
   volume: config.musicVolume ?? 0.2, duckVolume: config.musicDuckVolume ?? 0.06, enabled: config.music !== false,
 }, log);
 const speakStart = speech.onStart, speakEnd = speech.onEnd;
+game.music = music;
 speech.onStart = (t) => { music.duck(true); speakStart(t); };
 speech.onEnd = (t) => { music.duck(false); speakEnd(t); };
 
