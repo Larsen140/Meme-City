@@ -41,8 +41,17 @@ export class Action {
     this.duelEvery = (config.duelEveryMinutes ?? 6) * 60_000;
     this.duelLength = (config.duelSeconds ?? 90) * 1000;
     this.teams = new Map(); // Spieler-ID -> 'nord' | 'sued' (frei gewaehlt)
-    setTimeout(() => this.startDuel(), 3 * 60_000);
-    setInterval(() => { if (!this.duel) this.startDuel(); }, this.duelEvery);
+    this.nextDuelAt = Date.now() + 3 * 60_000;
+    this.nextRaffleAt = Date.now() + 5 * 60_000;
+    this.raffle = null;
+    this.active = new Map(); // Spieler-ID -> letzte Aktivitaet (Chat/Like)
+    // Zeitplan: Duell, Verlosung, Treue-Bonus
+    setInterval(() => {
+      const now = Date.now();
+      if (!this.duel && !this.raffle && now >= this.nextDuelAt) { this.nextDuelAt = now + this.duelEvery; this.startDuel(); }
+      if (!this.duel && !this.raffle && now >= this.nextRaffleAt) { this.nextRaffleAt = now + (config.raffleEveryMinutes ?? 8) * 60_000; this.startRaffle(); }
+    }, 1000);
+    setInterval(() => this.loyaltyBonus(), (config.loyaltyMinutes ?? 5) * 60_000);
 
     this.cooldown = new Map();
     setInterval(() => this.pushGoal(), 5000);
@@ -67,6 +76,7 @@ export class Action {
   // ---------- Ereignisse aus game.js ----------
 
   onLike(p, count) {
+    this.active.set(p.id, Date.now());
     this.sessionLikes += count;
     if (this.duel) this.addDuel(p, count);
     if (this.sessionLikes - this.goalStart >= this.goalTarget) this.goalReached();
@@ -79,6 +89,14 @@ export class Action {
   /** Gibt true zurueck, wenn die Nachricht ein Befehl war. */
   onChat(p, text) {
     const t = text.toLowerCase().trim();
+    this.active.set(p.id, Date.now());
+    if (this.raffle && /^(ich|dabei|me|hier|ich bin dabei)/.test(t)) {
+      if (!this.raffle.entries.has(p.id)) {
+        this.raffle.entries.add(p.id);
+        this.broadcast({ type: 'ticker', text: `🎟️ @${p.name} ist bei der Verlosung dabei! (${this.raffle.entries.size} Teilnehmer)` });
+      }
+      return true;
+    }
     let m;
     if ((m = t.match(/^(nord|norden|süd|sued|süden|sueden)\b/))) {
       const team = m[1].startsWith('n') ? 'nord' : 'sued';
@@ -96,8 +114,59 @@ export class Action {
   // ---------- 1. Like-Ziele ----------
 
   pushGoal() {
-    if (this.duel) return;
-    this.broadcast({ type: 'goal', name: this.goalEvent, cur: this.sessionLikes - this.goalStart, target: this.goalTarget });
+    if (this.duel || this.raffle) return;
+    const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+    const now = Date.now();
+    const next = this.nextDuelAt < this.nextRaffleAt
+      ? `⚔️ Duell in ${mmss(this.nextDuelAt - now)}` : `🎟️ Verlosung in ${mmss(this.nextRaffleAt - now)}`;
+    this.broadcast({ type: 'goal', name: this.goalEvent, cur: this.sessionLikes - this.goalStart, target: this.goalTarget, next });
+  }
+
+  // ---------- Verlosung: wer "ich" schreibt, kann ein Gratis-Upgrade gewinnen ----------
+
+  startRaffle() {
+    this.raffle = { entries: new Set(), end: Date.now() + 60_000 };
+    this.speech.say('Verlosung! Wer in der nächsten Minute ich in den Chat schreibt, kann ein Gratis-Upgrade fürs Haus gewinnen!', true);
+    this.broadcast({ type: 'banner', title: '🎟️ VERLOSUNG!', text: 'Schreib „ich“ in den Chat – Gewinn: 1 Stufe fürs Haus!', big: true });
+    const tick = setInterval(() => {
+      const left = Math.max(0, Math.ceil((this.raffle.end - Date.now()) / 1000));
+      this.broadcast({ type: 'raffle', left, count: this.raffle.entries.size });
+      if (left === 30) this.speech.say(`Noch dreißig Sekunden! Schon ${this.raffle.entries.size} Leute sind dabei. Schreib ich!`);
+      if (left === 10) this.speech.say('Noch zehn Sekunden für die Verlosung!');
+      if (left <= 0) { clearInterval(tick); this.drawRaffle(); }
+    }, 1000);
+  }
+
+  drawRaffle() {
+    const ids = [...this.raffle.entries];
+    this.raffle = null;
+    if (!ids.length) {
+      this.speech.say('Niemand hat mitgemacht. Schade! In ein paar Minuten gibt es die nächste Verlosung.');
+      return;
+    }
+    const p = this.game.store.players[ids[Math.floor(Math.random() * ids.length)]];
+    this.broadcast({ type: 'raffle', end: true, winner: p.name, avatar: p.avatar, count: ids.length });
+    this.speech.say(`Trommelwirbel! Gewonnen hat: ${spoken(p)}! Herzlichen Glückwunsch!`, true);
+    this.broadcast({ type: 'banner', title: `🎉 GEWINNER: @${p.name}`, text: `von ${ids.length} Teilnehmer*innen – Gratis-Upgrade!`, avatar: p.avatar, big: true });
+    this.broadcast({ type: 'confetti', amount: 180 });
+    if (p.plot === null) this.game.claimHouse(p, 'chat');
+    // genau so viele Punkte, dass es fuer die naechste Stufe reicht
+    const c = this.game.card(p);
+    const need = c.nextLevel ? Math.max(1, Math.ceil(c.coinsNeeded)) : 0;
+    if (need) this.game.addPoints(p, need);
+    else this.builder.enqueue({ type: 'camera', player: p });
+  }
+
+  // ---------- Treue-Bonus: wer aktiv dabei bleibt, bekommt Punkte ----------
+
+  loyaltyBonus() {
+    const now = Date.now(), win = 5 * 60_000;
+    const lucky = [...this.active.entries()].filter(([, t]) => now - t < win).map(([id]) => this.game.store.players[id]).filter(Boolean);
+    if (!lucky.length) return;
+    for (const p of lucky) this.game.addPoints(p, 2);
+    this.broadcast({ type: 'ticker', text: `💎 Treue-Bonus: ${lucky.length} aktive Bürger*innen bekommen +2 Punkte fürs Dabeibleiben!`, highlight: true });
+    this.speech.say(`Treue-Bonus! ${lucky.length} aktive Bürger bekommen zwei Punkte fürs Dabeibleiben. Bleibt dran, alle fünf Minuten gibt es mehr!`);
+    this.game.pushState();
   }
 
   goalReached() {
@@ -166,7 +235,7 @@ export class Action {
   // ---------- 2. Nord gegen Sued ----------
 
   startDuel() {
-    if (this.duel) return;
+    if (this.duel || this.raffle) return;
     this.duel = { nord: 0, sued: 0, end: Date.now() + this.duelLength, fighters: new Map(), half: false, last10: false };
     this.speech.say('Achtung! Nord gegen Süd beginnt! Schreibt nord oder süd in den Chat und liked für euer Team!', true);
     this.broadcast({ type: 'banner', title: '⚔️ NORD GEGEN SÜD', text: 'Schreib „nord“ oder „süd“ und like für dein Team!', big: true });

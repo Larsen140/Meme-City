@@ -76,6 +76,8 @@
   #goal.duel .gbar { background: #ff4d5e; }
   #goal.duel .gbar i { background: #3d8bff; border-radius: 0; }
   #goal .nord { color: #6fb0ff; } #goal .sued { color: #ff6b78; }
+  #goal .next { font-size: 21px; font-weight: 800; color: var(--mint); white-space: nowrap; padding-left: 12px; border-left: 2px solid var(--line); }
+  #goal.raffle { border-color: var(--gold); background: linear-gradient(90deg, rgba(255,201,60,.25), rgba(18,16,40,.85)); }
   #goal .time { font-size: 30px; font-weight: 800; color: var(--gold); min-width: 70px; text-align: right; }
 
   /* ---------- Pause ---------- */
@@ -275,7 +277,15 @@ function showGoal(g) {
   const el = $('goal');
   el.className = 'panel show';
   const pct = Math.min(100, (100 * g.cur) / g.target);
-  el.innerHTML = `<div class="lab">🎯 LIKE-ZIEL: <b>${esc(g.name)}</b></div><div class="gbar"><i style="width:${pct}%"></i></div><div class="num">${fmt(g.cur)} / ${fmt(g.target)}</div>`;
+  el.innerHTML = `<div class="lab">🎯 <b>${esc(g.name)}</b></div><div class="gbar"><i style="width:${pct}%"></i></div><div class="num">${fmt(g.cur)} / ${fmt(g.target)} ♥</div>${g.next ? `<div class="next">${esc(g.next)}</div>` : ''}`;
+}
+function showRaffle(r) {
+  const el = $('goal');
+  duelUntil = Date.now() + (r.end ? 8000 : 3000);
+  el.className = 'panel show raffle';
+  el.innerHTML = r.end
+    ? `<div class="lab">🎉 GEWINNER: <b>@${esc(r.winner)}</b></div><div class="gbar"><i style="width:100%"></i></div><div class="num">${fmt(r.count)} dabei</div>`
+    : `<div class="lab">🎟️ VERLOSUNG – schreib <b>„ich“</b></div><div class="gbar"><i style="width:${(100 * r.left) / 60}%"></i></div><div class="num">${fmt(r.count)} dabei</div><div class="time">${r.left}s</div>`;
 }
 function showDuel(d) {
   const el = $('goal');
@@ -296,6 +306,8 @@ function showHelp() {
     ['haustier katze', 'Haustier im Garten'],
     ['party', 'Feuerwerk bei dir'],
     ['nord / süd', 'Team fürs Duell'],
+    ['ich', 'bei Verlosungen mitmachen'],
+    ['Like ❤️', 'Herzen über deinem Haus'],
   ];
   $('help').innerHTML = `<div class="ptitle">💬 DAS KANNST DU IN DEN CHAT SCHREIBEN</div><div class="cmds">${cmds.map(([c, t]) => `<div class="c"><code>${c}</code><span>${t}</span></div>`).join('')}</div>`;
   $('player').classList.remove('show'); $('likestats').classList.remove('show');
@@ -480,6 +492,7 @@ function connect() {
     else if (m.type === 'goal') showGoal(m);
     else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);
+    else if (m.type === 'raffle') showRaffle(m);
     else if (m.type === 'pause') { if (m.text) $('pauseText').textContent = m.text; $('pause').classList.toggle('show', !!m.on); }
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);
