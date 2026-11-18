@@ -2,7 +2,7 @@
 // Alles laeuft nacheinander in einer Warteschlange, damit sich nichts ueberschneidet.
 import {
   BASE, HALF, plotCenter, housePlan, gardenCommands, roadCommands, scaffoldCommands,
-  removeScaffoldCommands, clearPlotCommands, lampCommands, freePlotDecoration, communityPlan, plazaCommands, COMMUNITY_CELLS, frontOf,
+  removeScaffoldCommands, clearPlotCommands, lampCommands, freePlotDecoration, scaffoldCleanupCommands, communityPlan, plazaCommands, COMMUNITY_CELLS, frontOf,
 } from './city.js';
 import { levelInfo } from './levels.js';
 import { snbtString, sleep } from './minecraft.js';
@@ -148,6 +148,18 @@ export class Builder {
     await mc.send('kill @e[tag=mc_title]');
     await mc.send(signCommand(0, BASE + 8, 0, ['mc_title'], 6, '{text:"MEME CITY",color:"#FFC93C",bold:true}'));
     await mc.send('kill @e[type=item]');
+  }
+
+  /** Entfernt Kran- und Geruestreste auf allen bebauten Grundstuecken. */
+  async cleanupScaffolds(players) {
+    for (const p of players) {
+      if (p.plot === null) continue;
+      const { x, z } = plotCenter(p.plot);
+      const plan = housePlan(x, z, p.builtLevel || p.level);
+      await this.mc.send(`forceload add ${x - 8} ${z - 8} ${x + 8} ${z + 8}`);
+      await this.mc.sendAll(scaffoldCleanupCommands(x, z, plan));
+      await this.mc.send(`forceload remove ${x - 8} ${z - 8} ${x + 8} ${z + 8}`);
+    }
   }
 
   /** Freie Grundstuecke vorbereiten: Strassen, Rand und Schild „FREI“. */

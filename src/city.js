@@ -377,3 +377,17 @@ export function freePlotDecoration(cx, cz, n) {
   }
   return c;
 }
+
+/** Reste von Geruest und Kran entfernen (z. B. wenn ein Bau unterbrochen wurde). */
+export function scaffoldCleanupCommands(cx, cz, house) {
+  const a = cx - HALF, b = cx + HALF, e = cz - HALF, f = cz + HALF, top = BASE + 70;
+  const c = [
+    `fill ${a} ${BASE} ${e} ${b} ${top} ${f} air replace yellow_concrete`,
+    `fill ${a} ${BASE} ${e} ${b} ${top} ${f} air replace iron_chain`,
+    `fill ${a} ${BASE + 1} ${e} ${b} ${top} ${f} air replace oak_fence`, // Gartenzaun steht nur ganz unten
+  ];
+  for (const [x, z] of [[house.x1 - 1, house.z1 - 1], [house.x2 + 1, house.z1 - 1], [house.x1 - 1, house.z2 + 1], [house.x2 + 1, house.z2 + 1]]) {
+    c.push(`execute if block ${x} ${BASE} ${z} oak_fence run setblock ${x} ${BASE} ${z} air`);
+  }
+  return [...c, ...lampCommands(cx, cz)];
+}

@@ -134,6 +134,8 @@ server.listen(config.webPort || 3000, async () => {
       }
     } });
   }
+  // Kran-/Geruestreste von unterbrochenen Bauten wegraeumen
+  builder.enqueue({ type: 'fn', fn: () => builder.cleanupScaffolds(Object.values(store.players)) });
   game.ensureFreePlots();
   const life = new CityLife(mc, { people: config.people ?? 40 }, log);
   life.start(store);
