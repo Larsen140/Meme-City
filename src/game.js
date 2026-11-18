@@ -266,7 +266,7 @@ export class Game {
     this.claimHouse(p, 'gift');
     this.addPoints(p, coins / this.coinsPerPoint);
     const n = spoken(p);
-    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: `${gift.count > 1 ? gift.count + 'x ' : ''}${gift.name} → ${this.giftFx ? this.giftFx.describe(gift, coins) : `+${fmt(coins / this.coinsPerPoint)} UP`}`, avatar: p.avatar, gift: gift.image, big: coins >= 100 });
+    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: `${gift.count > 1 ? gift.count + 'x ' : ''}${gift.name}`, avatar: p.avatar, gift: gift.image, big: coins >= 100 });
     this.broadcast({ type: 'confetti', amount: Math.min(200, 20 + coins) });
     this.broadcast({ type: 'player', card: this.card(p) });
     if (coins < 30) this.speech.say(pick([`Danke für ${gift.name}, ${n}!`, `${n}, danke dir!`, `Ein ${gift.name} von ${n}. Merci!`]));

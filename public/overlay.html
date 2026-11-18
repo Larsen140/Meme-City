@@ -227,8 +227,8 @@ function renderState(s) {
   $('rows').innerHTML = s.top.length ? s.top.slice(0, 5).map((p, i) => `<div class="row"><div class="pos">${i + 1}</div>${ava(p.avatar)}<div class="nm">@${esc(p.name)}</div><div class="lv">St. ${p.level}</div></div>`).join('')
     : '<div class="row" style="color:var(--muted)">Noch keine Häuser – schreib „Haus“!</div>';
   $('honor').innerHTML = s.honorary
-    ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">${fmt(s.honorary.coins)} Coins gespendet</div></div>`
-    : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Größter Unterstützer bekommt den Titel</div></div>`;
+    ? `${ava(s.honorary.avatar)}<div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">@${esc(s.honorary.name)}</div><div class="sub">Größter Unterstützer der Stadt</div></div>`
+    : `<div class="ava"></div><div><div class="lbl">👑 EHRENBÜRGERMEISTER</div><div class="nm">Noch frei!</div><div class="sub">Wer wird es?</div></div>`;
   $('comm').innerHTML = s.community
     ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU: ${esc(s.community.name.toUpperCase())}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
     : `<div class="ptitle">🏗️ ALLE GEMEINSCHAFTSBAUTEN FERTIG!</div>`;
@@ -255,7 +255,7 @@ function renderGifts(s) {
 let playerTimer;
 function showPlayer(c) {
   const need = c.nextLevel
-    ? `Noch <b>${fmt(c.likesNeeded)} Likes</b> oder <b>${fmt(c.coinsNeeded)} Coins</b> bis Stufe ${c.nextLevel} · ${esc(c.nextName)}`
+    ? `Noch <b>${fmt(c.likesNeeded)} Likes</b> bis Stufe ${c.nextLevel} · ${esc(c.nextName)}`
     : 'Höchste Stufe erreicht! 👑';
   $('player').innerHTML = `${ava(c.avatar)}<div class="info"><div class="nm">@${esc(c.name)}</div>
     <div class="lvl">${c.hasHouse ? `Stufe ${c.level} · ${esc(c.levelName)}` : 'Noch kein Haus – schreib „Haus“!'}</div>
@@ -314,7 +314,7 @@ function showGifts() {
   helpTimer = setTimeout(() => $('gifts').classList.remove('show'), 10000);
 }
 function showHelp() {
-  if (helpTurn++ % 2) return showGifts();
+  // (Geschenk-Info-Tafel abgeschaltet – TikTok wertet sie als Aufforderung)
   const cmds = [
     ['Haus', 'eigenes Grundstück'],
     ['zeig mein haus', 'Kamera fliegt hin'],
@@ -516,7 +516,7 @@ function connect() {
     else if (m.type === 'player') { ['likestats', 'help', 'gifts'].forEach((id) => $(id).classList.remove('show')); showPlayer(m.card); }
     else if (m.type === 'likestats') showLikeStats(m);
     else if (m.type === 'goal') showGoal(m);
-    else if (m.type === 'supporters') showSupporters(m);
+    // Top-Unterstuetzer-Tafel abgeschaltet (zeigte Coins)
     else if (m.type === 'help') showHelp();
     else if (m.type === 'duel') showDuel(m);
     else if (m.type === 'raffle') showRaffle(m);
