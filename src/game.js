@@ -37,6 +37,24 @@ export class Game {
     speech.onEnd = () => this.broadcast({ type: 'speak', on: false });
 
     setInterval(() => this.idle(), 75_000);
+
+    this.sessionLikes = new Map(); // Likes je Zuschauer in diesem Stream
+    this.likeLog = [];             // fuer "Likes pro Minute"
+    setInterval(() => this.likeStats(), 45_000);
+  }
+
+  /** Blendet ab und zu die Like-Statistik dieses Streams ein. */
+  likeStats() {
+    const now = Date.now();
+    this.likeLog = this.likeLog.filter((l) => now - l.t < 60_000);
+    const perMin = this.likeLog.reduce((s, l) => s + l.n, 0);
+    const total = [...this.sessionLikes.values()].reduce((s, n) => s + n, 0);
+    if (!total) return;
+    const top = [...this.sessionLikes.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5).map(([id, likes]) => {
+      const p = this.store.players[id];
+      return { name: p?.name || id, avatar: p?.avatar || '', likes };
+    });
+    this.broadcast({ type: 'likestats', top, total, perMin, likers: this.sessionLikes.size });
   }
 
   // ---------- Zuschauer ----------
@@ -241,6 +259,17 @@ export class Game {
     if (!p) return;
     p.likes += count;
     this.store.data.totals.likes += count;
+    // Like-Statistik fuer diesen Stream
+    const before = this.sessionLikes.get(p.id) || 0;
+    this.sessionLikes.set(p.id, before + count);
+    this.likeLog.push({ t: Date.now(), n: count });
+    for (const m of [100, 500, 1000, 2500, 5000, 10000]) {
+      if (before < m && before + count >= m) {
+        this.broadcast({ type: 'player', card: this.card(p) });
+        this.broadcast({ type: 'ticker', text: `❤️ @${p.name} hat heute schon ${fmt(m)} Likes gegeben!`, highlight: true });
+        if (m >= 500) this.speech.say(pick([`${fmt(m)} Likes von ${spoken(p)}! Wahnsinn!`, `${spoken(p)} hat schon ${fmt(m)} Likes geschickt. Danke!`]));
+      }
+    }
     p.likeRest += count;
     const up = Math.floor(p.likeRest / this.likesPerPoint);
     p.likeRest -= up * this.likesPerPoint;
