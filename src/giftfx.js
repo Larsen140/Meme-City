@@ -167,7 +167,7 @@ export class GiftFx {
       }
     } else if (kind === 'birds') {
       const tag = `mc_gift_birds_${Date.now()}`;
-      for (let i = 0; i < 4; i++) await mc.send(`summon parrot ${x + i - 2} ${y + 2} ${z} {Tags:["${tag}"],Variant:${i % 5},PersistenceRequired:1b}`);
+      for (let i = 0; i < 4; i++) await mc.send(`summon parrot ${x + i - 2} ${y + 2} ${z} {Tags:["${tag}","mc_gift_tmp"],Variant:${i % 5},PersistenceRequired:1b}`);
       await mc.send(`particle minecraft:cloud ${x} ${y + 2} ${z} 2 1 2 0.02 40 force`);
       await mc.send(`playsound minecraft:entity.parrot.fly master @a ${x} ${BASE} ${z} 2 1`);
       setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 30_000);
@@ -193,9 +193,9 @@ export class GiftFx {
       await mc.send(`playsound minecraft:entity.player.levelup master @a ${x} ${BASE} ${z} 2 1.5`);
     } else if (kind === 'hat') {
       const tag = `mc_gift_hat_${Date.now()}`;
-      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}"],block_state:"minecraft:black_concrete",${T(-2.5, 0, -2.5, 5, 0.6, 5)}}`);
-      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}"],block_state:"minecraft:black_concrete",${T(-1.5, 0.6, -1.5, 3, 3.5, 3)}}`);
-      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}"],block_state:"minecraft:red_concrete",${T(-1.55, 0.7, -1.55, 3.1, 0.6, 3.1)}}`);
+      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}","mc_gift_tmp"],block_state:"minecraft:black_concrete",${T(-2.5, 0, -2.5, 5, 0.6, 5)}}`);
+      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}","mc_gift_tmp"],block_state:"minecraft:black_concrete",${T(-1.5, 0.6, -1.5, 3, 3.5, 3)}}`);
+      await mc.send(`summon block_display ${x} ${top + 1} ${z} {Tags:["${tag}","mc_gift_tmp"],block_state:"minecraft:red_concrete",${T(-1.55, 0.7, -1.55, 3.1, 0.6, 3.1)}}`);
       await mc.send(`particle minecraft:poof ${x} ${top + 3} ${z} 2 1 2 0.05 40 force`);
       await mc.send(`playsound minecraft:entity.villager.celebrate master @a ${x} ${BASE} ${z} 2 1`);
       setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 30_000);
@@ -212,7 +212,7 @@ export class GiftFx {
         for (let a = 0; a <= 180; a += 12) {
           const rad = (a * Math.PI) / 180, ox = Math.cos(rad) * r, oy = Math.sin(rad) * r;
           const px = fr.dx ? x : x + ox, pz = fr.dx ? z + ox : z;
-          await mc.send(`summon block_display ${px.toFixed(2)} ${(top + oy).toFixed(2)} ${pz.toFixed(2)} {Tags:["${tag}"],brightness:{sky:15,block:15},block_state:"minecraft:${cols[k]}_stained_glass",${T(-0.4, -0.4, -0.4, 0.8, 0.8, 0.8)}}`);
+          await mc.send(`summon block_display ${px.toFixed(2)} ${(top + oy).toFixed(2)} ${pz.toFixed(2)} {Tags:["${tag}","mc_gift_tmp"],brightness:{sky:15,block:15},block_state:"minecraft:${cols[k]}_stained_glass",${T(-0.4, -0.4, -0.4, 0.8, 0.8, 0.8)}}`);
         }
       }
       await mc.send(`playsound minecraft:block.amethyst_block.chime master @a ${x} ${BASE} ${z} 2 1`);
@@ -239,7 +239,7 @@ export class GiftFx {
       const tag = `mc_gift_snow_${Date.now()}`;
       // Schneemann aus Bloecken (echte Schneegolems schmelzen in dieser Welt)
       for (const [b, tr] of [['snow_block', T(-0.6, 0, -0.6, 1.2, 1.2, 1.2)], ['snow_block', T(-0.45, 1.2, -0.45, 0.9, 0.9, 0.9)], ['carved_pumpkin', T(-0.35, 2.1, -0.35, 0.7, 0.7, 0.7)]]) {
-        await mc.send(`summon block_display ${x + 3} ${BASE} ${z + 3} {Tags:["${tag}"],block_state:"minecraft:${b}",${tr}}`);
+        await mc.send(`summon block_display ${x + 3} ${BASE} ${z + 3} {Tags:["${tag}","mc_gift_tmp"],block_state:"minecraft:${b}",${tr}}`);
       }
       for (let i = 0; i < 10; i++) { await mc.send(`particle minecraft:snowflake ${x} ${y + 4} ${z} 4 2 4 0.02 120 force`); await sleep(200); }
       setTimeout(() => mc.send(`kill @e[tag=${tag}]`), 40_000);
@@ -262,7 +262,7 @@ export class GiftFx {
     const sx = rx - along.x * 22, sz = rz - along.z * 22;
     for (const [off, b, w, h, l, ty] of parts) {
       const ox = sx + along.x * off, oz = sz + along.z * off;
-      await mc.send(`summon block_display ${ox.toFixed(2)} ${BASE} ${oz.toFixed(2)} {Tags:["${tag}"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${T(-w / 2, ty, -l / 2, w, h, l)}}`);
+      await mc.send(`summon block_display ${ox.toFixed(2)} ${BASE} ${oz.toFixed(2)} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${T(-w / 2, ty, -l / 2, w, h, l)}}`);
     }
     await mc.send(`playsound minecraft:entity.minecart.riding master @a ${rx} ${BASE} ${rz} 2 ${kind === 'train' ? 0.7 : 1.4}`);
     await sleep(150);
@@ -285,7 +285,7 @@ export class GiftFx {
       ['white_concrete', T(-2.5, 0.6, -4, 5, 0.3, 1)], ['red_concrete', T(-0.15, 1.6, -4, 0.3, 1.8, 1.2)],
       ['light_blue_stained_glass', T(-0.6, 1.2, 2.6, 1.2, 0.5, 1)],
     ];
-    for (const [b, tr] of parts) await mc.send(`summon block_display ${sx} ${y} ${sz} {Tags:["${tag}"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${tr}}`);
+    for (const [b, tr] of parts) await mc.send(`summon block_display ${sx} ${y} ${sz} {Tags:["${tag}","mc_gift_tmp"],teleport_duration:50,Rotation:[${yaw}f,0f],block_state:"minecraft:${b}",${tr}}`);
     await mc.send(`playsound minecraft:item.elytra.flying master @a ${x} ${y} ${z} 2 1`);
     await sleep(150);
     for (let k = 0; k < 2; k++) {
@@ -315,8 +315,8 @@ export class GiftFx {
     const mc = this.mc, tag = `mc_donut_${Date.now()}`;
     for (let a = 0; a < 360; a += 30) {
       const rad = (a * Math.PI) / 180, cx = Math.cos(rad) * 2.2, cz = Math.sin(rad) * 2.2;
-      await mc.send(`summon block_display ${(x + cx).toFixed(2)} ${y} ${(z + cz).toFixed(2)} {Tags:["${tag}"],block_state:"minecraft:brown_terracotta",${T(-0.6, 0, -0.6, 1.2, 0.8, 1.2)}}`);
-      await mc.send(`summon block_display ${(x + cx).toFixed(2)} ${y} ${(z + cz).toFixed(2)} {Tags:["${tag}"],block_state:"minecraft:pink_concrete",${T(-0.62, 0.7, -0.62, 1.24, 0.25, 1.24)}}`);
+      await mc.send(`summon block_display ${(x + cx).toFixed(2)} ${y} ${(z + cz).toFixed(2)} {Tags:["${tag}","mc_gift_tmp"],block_state:"minecraft:brown_terracotta",${T(-0.6, 0, -0.6, 1.2, 0.8, 1.2)}}`);
+      await mc.send(`summon block_display ${(x + cx).toFixed(2)} ${y} ${(z + cz).toFixed(2)} {Tags:["${tag}","mc_gift_tmp"],block_state:"minecraft:pink_concrete",${T(-0.62, 0.7, -0.62, 1.24, 0.25, 1.24)}}`);
     }
     await mc.send(`particle minecraft:dust{color:[1.0,0.9,0.2],scale:1.2} ${x} ${y + 1} ${z} 2 0.3 2 0 60 force`);
     await mc.send(`playsound minecraft:entity.generic.eat master @a ${x} ${y} ${z} 2 0.8`);

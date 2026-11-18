@@ -2,7 +2,7 @@
 //  1. Like-Ziele: gemeinsames Ziel ("Noch 200 Likes bis Meteorregen"), danach grosses Event
 //  2. Nord gegen Sued: regelmaessiges Like-Duell der beiden Stadthaelften
 //  3. Chat-Befehle: "farbe rot", "haustier katze", "party"
-import { BASE, plotCenter } from './city.js';
+import { BASE, plotCenter, frontOf } from './city.js';
 import { sleep } from './minecraft.js';
 
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -20,6 +20,20 @@ const PETS = {
   schaf: ['sheep', 'Schaf'], huhn: ['chicken', 'Huhn'], pferd: ['horse', 'Pferd'], frosch: ['frog', 'Frosch'],
   axolotl: ['axolotl', 'Axolotl'], biene: ['bee', 'Biene'], lama: ['llama', 'Lama'], esel: ['donkey', 'Esel'],
 };
+
+/** Tierwort erkennen, auch Mehrzahl/Verkleinerung: "hunde", "katzen", "kätzchen", "hündchen" */
+function findPet(word) {
+  const norm = (s) => s.toLowerCase().replace(/ä/g, 'a').replace(/ü/g, 'u').replace(/ö/g, 'o');
+  const w = norm(word).replace(/chen$|lein$/, '');
+  if (!w) return null;
+  for (const [k, v] of Object.entries(PETS)) {
+    const kk = norm(k);
+    if (w === kk || w === kk + 'e' || w === kk + 'n' || w === kk + 'en' || (kk.length >= 4 && w.startsWith(kk))) return v;
+  }
+  if (/^kat/.test(w)) return PETS.katze;
+  if (/^hun|^dog/.test(w)) return PETS.hund;
+  return null;
+}
 
 const EVENTS = ['Tornado', 'Meteorregen', 'Feuerwerk-Show', 'Regenbogen', 'Tornado', 'Schneesturm', 'Party'];
 
@@ -105,9 +119,19 @@ export class Action {
       if (this.ready('teamtalk', 15_000)) this.speech.say(`${spoken(p)} ist im Team ${team === 'nord' ? 'Nord' : 'Süd'}!`);
       return true;
     }
-    if ((m = t.match(/^farbe\s+(\S+)/))) return this.cmdColor(p, m[1]), true;
-    if ((m = t.match(/^haustier\s+(\S+)/))) return this.cmdPet(p, m[1]), true;
-    if (/^party\b/.test(t)) return this.cmdParty(p), true;
+    // Befehle duerfen irgendwo im Satz stehen: "ich will haustier hund", "Haustier: Katze", "farbe vom dach rot"
+    const words = t.replace(/[^a-zäöüß ]/g, ' ').split(/\s+/).filter(Boolean);
+    if (/haustier|\bpet\b/.test(t)) {
+      const w = words.find((x) => findPet(x));
+      this.log(`[Befehl] @${p.name}: ${text}`);
+      return this.cmdPet(p, w || ''), true;
+    }
+    if (/farbe|color/.test(t)) {
+      const w = words.find((x) => COLORS[x]);
+      this.log(`[Befehl] @${p.name}: ${text}`);
+      return this.cmdColor(p, w || ''), true;
+    }
+    if (/\bparty\b/.test(t)) { this.log(`[Befehl] @${p.name}: ${text}`); return this.cmdParty(p), true; }
     return false;
   }
 
@@ -342,20 +366,27 @@ export class Action {
   }
 
   cmdPet(p, word) {
-    const pet = PETS[word.replace(/[^a-zäöüß]/g, '')];
+    const pet = findPet(word);
     if (p.plot === null) return this.speech.say(`${spoken(p)}, dein Haustier braucht ein Zuhause. Schreib zuerst Haus!`);
     if (!pet) return this.broadcast({ type: 'ticker', text: `Haustiere: ${Object.keys(PETS).join(', ')}` });
     if (!this.ready('pet:' + p.id, 60_000)) return;
-    const { x, z } = plotCenter(p.plot);
+    const { x: cx, z: cz } = plotCenter(p.plot);
+    // im Vorgarten (Seite zur Kamera) neben dem Weg – dort sieht man es immer
+    const fr = frontOf(cx, cz);
+    const x = cx + fr.dx * 5 + (fr.dz ? 3 : 0), z = cz + fr.dz * 5 + (fr.dx ? 3 : 0);
     const name = JSON.stringify(`${p.name}s ${pet[1]}`);
     p.pet = pet[0];
     this.game.store.save();
-    this.speech.say(pick([`${spoken(p)} bekommt einen ${pet[1]}! Wie süß!`, `Ein neuer Mitbewohner: ${pet[1]} für ${spoken(p)}!`]));
+    this.speech.say(pick([`${spoken(p)} hat ein neues Haustier: ${pet[1]}! Wie süß!`, `Ein neuer Mitbewohner: ${pet[1]} für ${spoken(p)}!`]));
     this.builder.enqueue({ type: 'camera', player: p });
     this.builder.enqueue({ type: 'fn', fn: async () => {
       await this.mc.send(`kill @e[tag=mc_pet_${p.plot}]`);
-      await this.mc.send(`summon ${pet[0]} ${x + 4} ${BASE} ${z + 4} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,CustomName:${name},CustomNameVisible:1b}`);
-      await this.mc.send(`particle minecraft:heart ${x + 4} ${BASE + 1.5} ${z + 4} 0.6 0.4 0.6 0 12 force`);
+      // NoAI: das Tier bleibt im Vorgarten stehen und laeuft nicht weg
+      const yaw = { north: 180, south: 0, east: -90, west: 90 }[fr.facing];
+      const r = await this.mc.send(`summon ${pet[0]} ${x} ${BASE} ${z} {Tags:["mc_pet","mc_pet_${p.plot}"],PersistenceRequired:1b,NoAI:1b,Invulnerable:1b,Rotation:[${yaw}f,0f],CustomName:${name},CustomNameVisible:1b}`);
+      this.log(`[Haustier] ${p.name}: ${pet[0]} -> ${r}`);
+      await this.mc.send(`particle minecraft:heart ${x} ${BASE + 1.5} ${z} 0.6 0.4 0.6 0 12 force`);
+      await this.mc.send(`particle minecraft:poof ${x} ${BASE + 0.5} ${z} 0.4 0.3 0.4 0.05 20 force`);
     } });
   }
 

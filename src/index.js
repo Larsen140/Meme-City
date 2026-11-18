@@ -168,6 +168,8 @@ server.listen(config.webPort || 3000, async () => {
   for (const p of Object.values(store.players)) {
     if (p.plot !== null && (p.builtLevel || 0) < p.level) builder.enqueue({ type: 'build', player: p, instant: true });
   }
+  // zeitweise Geschenk-Effekte (Hut, Regenbogen, Voegel ...) aufraeumen, falls ein Neustart dazwischen kam
+  mc.send('kill @e[tag=mc_gift_tmp]');
   game.ensureFreePlots();
   game.giftFx.checkCrown(); // Krone fuer den aktuellen Ehrenbuergermeister
   const life = new CityLife(mc, { people: config.people ?? 40 }, log);
