@@ -51,6 +51,12 @@
   #comm { padding: 16px 20px; }
   .bar { height: 26px; background: rgba(255,255,255,.1); border-radius: 13px; overflow: hidden; margin-top: 8px; }
   .bar i { display: block; height: 100%; width: 0; border-radius: 13px; background: linear-gradient(90deg, var(--mint), var(--sky)); transition: width .8s ease; }
+  #gifts { padding: 14px 20px; }
+  #gifts .g { display: flex; align-items: center; gap: 10px; font-size: 22px; padding: 3px 0; }
+  #gifts .g .ic { width: 34px; text-align: center; font-size: 26px; }
+  #gifts .g b { min-width: 150px; }
+  #gifts .g span { color: var(--mint); font-weight: 700; margin-left: auto; white-space: nowrap; }
+  #gifts .tip { font-size: 19px; color: var(--muted); margin-top: 4px; }
   #comm .nums { display: flex; justify-content: space-between; font-size: 24px; font-weight: 700; }
 
   /* ---------- Banner ---------- */
@@ -123,6 +129,7 @@
 <div id="right">
   <div id="honor" class="panel"></div>
   <div id="comm" class="panel"></div>
+  <div id="gifts" class="panel"></div>
 </div>
 
 <div id="banner" class="panel"></div>
@@ -162,6 +169,18 @@ function renderState(s) {
   $('comm').innerHTML = s.community
     ? `<div class="ptitle">🏗️ GEMEINSCHAFTSBAU: ${esc(s.community.name.toUpperCase())}</div><div class="nums"><span>${fmt(s.community.progress)} / ${fmt(s.community.goal)}</span><span>${Math.floor(100 * s.community.progress / s.community.goal)} %</span></div><div class="bar"><i style="width:${Math.min(100, 100 * s.community.progress / s.community.goal)}%"></i></div>`
     : `<div class="ptitle">🏗️ ALLE GEMEINSCHAFTSBAUTEN FERTIG!</div>`;
+}
+
+function renderGifts(s) {
+  const rows = [
+    ['🌹', 'Rose', '+1 UP · Herzen'],
+    ['🍩', 'Donut', '+30 UP · Feuerwerk'],
+    ['🫶', 'Herz-Hände', '+100 UP · Show'],
+    ['🌌', 'Universe', '+1000 UP · PARTY'],
+  ];
+  $('gifts').innerHTML = `<div class="ptitle">🎁 GESCHENKE = PUNKTE</div>` +
+    rows.map(([ic, n, e]) => `<div class="g"><div class="ic">${ic}</div><b>${n}</b><span>${e}</span></div>`).join('') +
+    `<div class="tip">1 Coin = 1 UP · ${s.likesPerPoint || 50} Likes = 1 UP · UP bauen dein Haus aus!</div>`;
 }
 
 // ---------- Spieler-Karte ----------
@@ -348,7 +367,7 @@ function connect() {
   ws.onclose = () => { $('status').textContent = 'Spielprogramm nicht verbunden …'; setTimeout(connect, 2000); };
   ws.onmessage = (e) => {
     const m = JSON.parse(e.data);
-    if (m.type === 'state') renderState(m.state);
+    if (m.type === 'state') { renderState(m.state); renderGifts(m.state); }
     else if (m.type === 'player') showPlayer(m.card);
     else if (m.type === 'banner') showBanner(m);
     else if (m.type === 'almost') showAlmost(m.card);

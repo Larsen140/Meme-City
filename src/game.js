@@ -98,6 +98,7 @@ export class Game {
       honorary: ts ? { name: ts.name, nick: ts.nick, avatar: ts.avatar, coins: ts.coins } : null,
       community: proj ? { name: proj.name, progress: Math.floor(c.progress), goal: proj.goal } : null,
       totals: this.store.data.totals,
+      likesPerPoint: this.likesPerPoint,
     };
   }
 
@@ -230,8 +231,7 @@ export class Game {
     if (coins < 30) this.speech.say(pick([`Danke für ${gift.name}, ${n}!`, `${n}, danke dir!`, `Ein ${gift.name} von ${n}. Merci!`]));
     else this.speech.say(pick([`Wow, ${n}! Vielen Dank für ${gift.name}!`, `Applaus für ${n}!`, `${n} lässt es krachen! Danke!`]), true);
     // Events bei grossen Geschenken
-    if (coins >= 1000) this.bigEvent(p);
-    else if (coins >= 100) this.builder.enqueue({ type: 'fn', fn: () => this.builder.fireworkShow(0, 0, 10, 10) });
+    this.giftEffect(p, coins);
     this.pushState();
     this.store.save();
   }
@@ -251,6 +251,33 @@ export class Game {
       this.speech.say(`Kurzer Check: ${spoken(p)} hat noch kein Haus. Schreib Haus in den Chat!`);
     }
     this.store.save();
+  }
+
+  /** Sichtbarer Effekt in Minecraft, je nach Groesse des Geschenks (am Stadtplatz). */
+  giftEffect(p, coins) {
+    const mc = this.builder.mc, b = this.builder;
+    if (coins >= 1000) return this.bigEvent(p);
+    if (coins >= 100) {
+      this.builder.enqueue({ type: 'fn', fn: async () => {
+        await b.camera(0, -35, 40, 0, -55, 0);
+        await mc.send('particle minecraft:totem_of_undying 0 -52 0 6 4 6 0.6 400 force');
+        await b.fireworkShow(0, 0, 12, 12);
+      } });
+      return;
+    }
+    if (coins >= 30) {
+      b.fireworkShow(0, 0, 5, 8);
+      if (p.plot !== null) this.builder.enqueue({ type: 'camera', player: p });
+      return;
+    }
+    if (coins >= 5) {
+      b.firework(0, -60, 0);
+      mc.send('particle minecraft:happy_villager 0 -56 0 8 3 8 0 120 force');
+      return;
+    }
+    // Kleine Geschenke (Rose & Co.): Herzen ueber dem Platz
+    mc.send('particle minecraft:heart 0 -54 0 7 3 7 0 25 force');
+    mc.send('playsound minecraft:entity.experience_orb.pickup master @a 0 -55 0 1 1.4');
   }
 
   bigEvent(p) {
