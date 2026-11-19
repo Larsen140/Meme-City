@@ -249,11 +249,13 @@ export class Game {
     if (this.builder.queue.some((j) => j.zoo)) return this.ack(p, '🦁 Tour kommt gleich – schon in der Warteschlange');
     if (!force && Date.now() - (this._zooAt || 0) < 90_000) return this.ack(p, '🦁 Tour lief gerade – gleich nochmal');
     this._zooAt = Date.now();
-    this.ack(p, '🦁 Tierpark-Tour startet gleich!');
-    this.broadcast({ type: 'ticker', text: `🦁 @${p.name} startet die Tierpark-Tour!`, highlight: true });
+    if (!p.admin) {
+      this.ack(p, '🦁 Tierpark-Tour startet gleich!');
+      this.broadcast({ type: 'ticker', text: `🦁 @${p.name} startet die Tierpark-Tour!`, highlight: true });
+    }
     this.builder.enqueue({ type: 'fn', zoo: true, fn: async () => {
       this.broadcast({ type: 'banner', title: '🦁 TIERPARK-TOUR', text: 'Alle Haustiere – schreib z. B. haustier drache', big: true });
-      this.speech.say(`${spoken(p)} will alle Tiere sehen! Ab in den Tierpark!`, true);
+      this.speech.say(p.admin ? 'Ab in den Tierpark! Hier wohnen alle Haustiere.' : `${spoken(p)} will alle Tiere sehen! Ab in den Tierpark!`, true);
       await zooTour(this.builder, site.x, site.z);
     } });
   }
@@ -351,7 +353,7 @@ export class Game {
       if (c.nextLevel && c.progress >= 0.85 && !p._almost) {
         p._almost = c.nextLevel;
         this.broadcast({ type: 'almost', card: c });
-        this.speech.say(`Fast geschafft! ${spoken(p)} steht kurz vor Stufe ${c.nextLevel}. Noch ${fmt(c.likesNeeded)} Likes!`);
+        this.speech.say(`Fast geschafft! ${spoken(p)} steht kurz vor Stufe ${c.nextLevel}.`);
       }
       if (p._almost && p._almost !== c.nextLevel) p._almost = null;
     } else {
@@ -503,13 +505,12 @@ export class Game {
     this.claimHouse(p, 'gift');
     this.addPoints(p, coins / this.coinsPerPoint);
     const n = spoken(p);
-    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: `${gift.count > 1 ? gift.count + 'x ' : ''}${gift.name}`, avatar: p.avatar, gift: gift.image, big: coins >= 100 });
-    this.broadcast({ type: 'confetti', amount: Math.min(200, 20 + coins) });
+    // Schlichtes Danke ohne Geschenkname, Geschenkbild und Effekte (TikTok wertet Geschenk-Automatik als Aufforderung)
+    this.broadcast({ type: 'banner', title: `DANKE @${p.name}!`, text: 'Schön, dass du da bist 💛', avatar: p.avatar });
     this.broadcast({ type: 'player', card: this.card(p) });
     // Kurzes Danke ohne Geschenknamen und nicht bei jedem Geschenk (TikTok wertet Dauer-Ansagen als Aufforderung)
     if (!this.speech.speaking && !this.speech.queue.length && Math.random() < 0.5) this.speech.say(pick([`Danke, ${n}!`, `${n}, du bist klasse!`, `Merci, ${n}!`]));
-    // Effekt am Haus des Schenkers (auf Wunsch von Larsen wieder an)
-    if (this.giftFx) this.giftFx.run(p, gift, coins); else this.giftEffect(p, coins);
+    // keine automatischen Effekte, die an ein Geschenk gekoppelt sind
     this.pushState();
     this.store.save();
   }
@@ -598,9 +599,9 @@ export class Game {
     const b = this.builder, fx = this.giftFx;
     const houses = this.ranking();
     const shows = ['spotlight', 'spotlight', 'train', 'plane', 'plazaDisco', 'fireworks', 'nightLights', 'windmill', 'pyramid', ...(this.wheel ? ['wheel', 'wheel'] : [])];
-    // jede zweite Show fliegt zur grossen Tafel am Stadtplatz (Geschenke-Seite zuerst)
+    // jede vierte Show fliegt zur grossen Tafel am Stadtplatz (Befehle)
     this._showN = (this._showN || 0) + 1;
-    const show = force || (this._showN % 2 === 0 && this.board ? 'board' : shows[Math.floor(Math.random() * shows.length)]);
+    const show = force || (this._showN % 4 === 0 && this.board ? 'board' : shows[Math.floor(Math.random() * shows.length)]);
     const rnd = houses[Math.floor(Math.random() * houses.length)];
     if (show === 'spotlight' && rnd && fx) {
       // Spotlight auf ein zufaelliges Haus mit einem kleinen Effekt
@@ -623,14 +624,11 @@ export class Game {
       this.broadcast({ type: 'ticker', text: '🎡 Das Riesenrad von Meme City dreht sich!' });
       await this.showWheel(3, 10_000, busy);
     } else if (show === 'board' && this.board) {
-      // Kamera vor die Tafel, erst die Geschenke-Seite, dann die Befehle
+      // Kamera vor die Tafel mit den Chat-Befehlen
       await b.camera(0, BASE_Y + 18, 26, 0, BASE_Y + 16, 0, 3, true);
       if (busy()) return;
-      await this.board.show(2);
-      await b.waitIdle(9000, busy);
-      if (busy()) return;
       await this.board.show(0);
-      await b.waitIdle(7000, busy);
+      await b.waitIdle(8000, busy);
     } else if (show === 'plazaDisco') {
       this.broadcast({ type: 'ticker', text: '🪩 Disco auf dem Stadtplatz!' });
       await b.camera(0, BASE_Y + 12, 30, 0, BASE_Y + 3, 0, 3, true);
@@ -723,8 +721,6 @@ export class Game {
         `Welches Haustier passt zu dir? Mein Tipp: ${p1}! Schreib haustier ${p1.toLowerCase()} und probier es aus!`,
         'Ein Faultier als Haustier? Das bin ich montags. Schreib haustier faultier!',
         'Schreib party, dann eskaliert es bei dir zu Hause. Im positiven Sinne!',
-        'Wer fünf Minuten chillt und dabei bleibt, dessen Haus wächst eine Stufe. Free Upgrade, einfach zwischendurch was schreiben!',
-        'Beim Bau-Sprint zählt jede Nachricht und jedes Like doppelt für den Gemeinschaftsbau. Achtet auf den Countdown oben, sonst seid ihr lost!',
         'Bei der Abstimmung entscheidet ihr, was in der Stadt abgeht. Schreibt dann einfach eins, zwei oder drei!',
         'Schreib nord oder süd und zeig beim nächsten Duell, welches Team der Boss ist!',
         'Du weißt nicht, welches Haustier du willst? Schreib tierpark, dann zeig ich dir alle Tiere!',

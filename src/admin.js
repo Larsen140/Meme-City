@@ -39,7 +39,7 @@ export function adminRoutes(app, { game, builder, speech, broadcast, mc, music, 
   });
   A('event/:name', (b, req) => { builder.enqueue({ type: 'fn', fn: () => act.runEvent(req.params.name) }); });
   A('show/:name', (b, req) => { builder.nextShow = req.params.name; });
-  A('zoo', () => { game.zooTourCmd({ name: 'Admin', avatar: '' }, true); });
+  A('zoo', () => { game.zooTourCmd({ name: 'Admin', avatar: '', admin: true }, true); });
 
   // ---------- Kamera ----------
   A('camera/overview', () => { builder.enqueue({ type: 'fn', fn: async () => { await builder.cameraOverview(); await new Promise((r) => setTimeout(r, 6000)); } }); });
@@ -53,7 +53,8 @@ export function adminRoutes(app, { game, builder, speech, broadcast, mc, music, 
   A('points', (b) => { const p = player(b.name), n = Math.max(-1000, Math.min(1000, Number(b.points) || 0)); if (n > 0) game.addPoints(p, n); game.pushState(); return { name: p.name, points: p.points, level: p.level }; });
   A('house', (b) => { const p = player(b.name); if (!game.claimHouse(p, 'chat')) throw new Error('hat schon ein Haus'); return { plot: p.plot + 1 }; });
   A('rebuild', (b) => { const p = player(b.name); if (p.plot === null) throw new Error('hat kein Haus'); builder.enqueue({ type: 'build', player: p, instant: true }); });
-  A('chat-as', (b) => { const name = String(b.name || 'testzuschauer'); game.duringChat(() => game.onChat({ name, nick: name, avatar: '' }, String(b.text || ''))); });
+  A('chat-as', (b) => {
+    if (/^verbunden mit/.test(String(tiktok.status))) throw new Error('Während des LIVE gesperrt'); const name = String(b.name || 'testzuschauer'); game.duringChat(() => game.onChat({ name, nick: name, avatar: '' }, String(b.text || ''))); });
 
   // ---------- Bauen ----------
   A('bonus/:name', (b, req) => { if (!game.buildBonus(req.params.name)) throw new Error('kein Bauplatz frei'); });

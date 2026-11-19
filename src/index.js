@@ -121,6 +121,8 @@ const GIFTS = {
 };
 const testUser = (b) => ({ name: String(b.user || 'testzuschauer').replace(/^@/, '').trim(), nick: b.nick || b.user, avatar: b.avatar || '' });
 
+// Testnachrichten erscheinen im Overlay wie echte Zuschauer – waehrend des LIVE gesperrt
+app.use('/api/sim', (req, res, next) => (/^verbunden mit/.test(String(tiktok.status)) ? res.status(403).json({ error: 'Während des LIVE gesperrt' }) : next()));
 app.post('/api/sim/chat', (req, res) => { game.duringChat(() => game.onChat(testUser(req.body), String(req.body.text || ''))); res.json({ ok: true }); });
 app.post('/api/sim/like', (req, res) => { game.onLike(testUser(req.body), Number(req.body.count) || 1); res.json({ ok: true }); });
 app.post('/api/sim/follow', (req, res) => { game.onFollow(testUser(req.body)); res.json({ ok: true }); });

@@ -16,11 +16,11 @@ const ok = (c, t) => { console.log((c ? 'OK   ' : 'FEHLER ') + t); if (!c) proce
 const p = { id: 'u1', name: 'tester', points: 0, level: 1, plot: 5 };
 store.data.players.u1 = p;
 a.onChat(p, 'hallo');
-ok(out.some((m) => m.type === 'ack' && m.text.includes('Bleib')), 'Hinweis beim ersten Mal');
+ok(!out.some((m) => m.type === 'ack' && m.text.includes('Bleib')), 'kein Dabeibleib-Hinweis mehr (Belohnungen aus)');
 a.seen.set(p.id, Date.now() - 6 * 60_000);
 const lv = p.level;
 a.onChat(p, 'noch da');
-ok(p.level === lv + 1, `Haus eine Stufe hoeher (${lv} -> ${p.level})`);
+ok(p.level === lv, `keine Gratis-Stufe fuers Dabeibleiben (${lv} -> ${p.level})`);
 const lv2 = p.level; a.onChat(p, 'nochmal');
 ok(p.level === lv2, 'Bonus nur einmal pro LIVE');
 

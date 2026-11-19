@@ -22,19 +22,7 @@ export const PAGES = [
   comp('SO WÄCHST DEIN HAUS', '#FF6FAE', [
     line('❤ 50 Likes', '  = 1 Punkt', '#FF6FAE'),
     line('★ Geschenke', '  1 Münze = 1 Punkt', '#FFC93C'),
-    line('⌚ 5 Minuten dabei', '  = Haus wächst 1 Stufe', '#3DF5B0'),
     line('■ Jeder Punkt', '  baut am Gemeinschaftsbau mit', '#FFC93C'),
-  ]),
-  // Was ein Geschenk in der Stadt bewirkt (Effekte aus giftfx.js)
-  comp('GESCHENKE IN MEME CITY', '#FFC93C', [
-    line('Rose', '  Herzen + Rosen im Garten', '#FF6FAE'),
-    line('Fingerherz', '  Herz-Show über dem Haus', '#FF6FAE'),
-    line('Donut', '  Riesen-Donut am Haus', '#FFC93C'),
-    line('Hund / Katze / Panda', '  Tier besucht dich', '#3DF5B0'),
-    line('Feuerwerk / Rakete', '  Rakete über dem Haus', '#4CC9FF'),
-    line('Auto / Flugzeug / Zug', '  fährt bei dir vorbei', '#4CC9FF'),
-    line('ab 1.000 Münzen', '  eigene Statue am Platz', '#FFC93C'),
-    line('1 Münze', '  = 1 Punkt fürs Haus', '#FFFFFF'),
   ]),
 ];
 const BG = [-1072558032, -1070591936, -1070587904];

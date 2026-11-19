@@ -51,7 +51,7 @@ export function answer(game, p, t, name) {
     [/wie viele stufen|höchste stufe|hoechste stufe|letzte stufe|max(imal)?.*stufe|königspalast|koenigspalast/, () =>
       `Es gibt ${MAX_LEVEL} Stufen: von der ${levelInfo(1).name} über Villa und Hochhaus bis zum ${levelInfo(MAX_LEVEL).name}.`],
     [/geschenk|coins?|rose|gift/, () =>
-      `${name}, alles was du im LIVE machst, zählt für dein Haus. Am einfachsten mit Likes!`],
+      `${name}, alles was du im LIVE machst, zählt für dein Haus.`],
     // ---- Stadt ----
     [/gemeinschaftsbau|rathaus|fußballplatz|fussballplatz|freibad|was wird gebaut|nächste gebäude|naechste gebaeude/, () => s.community
       ? `Gerade bauen wir zusammen an ${art(s.community.name, 'dat')}: ${fmt(s.community.progress)} von ${fmt(s.community.goal)} Punkten. Jeder Punkt für dein Haus zählt auch dafür!`
@@ -66,7 +66,7 @@ export function answer(game, p, t, name) {
       `Meme City hat ${fmt(s.houses)} Häuser, ${fmt(s.citizens)} Bürger und ${fmt(s.pets || 0)} Haustiere!`],
     [/like.?ziel|tornado|meteor|event|regenbogen|schneesturm/, () =>
       `Oben siehst du das Like-Ziel. Wenn wir es zusammen schaffen, passiert ein großes Event, zum Beispiel ein Tornado oder ein Meteorregen!`],
-    [/treue|bonus|dabeibleiben/, () => `Wer aktiv dabei ist, bekommt alle fünf Minuten Treue-Punkte für sein Haus!`],
+    [/treue|bonus|dabeibleiben/, () => `Schreib einfach Befehle wie Haus, haustier katze oder flagge deutschland. Viel Spaß in Meme City!`],
     [/denkmal|statue/, () => `Auf dem Stadtplatz stehen Denkmäler für die größten Fans der Stadt.`],
     [/wer bist du|bist du (ein )?(bot|ki|echt|mensch)|bürgermeister|buergermeister/, () =>
       `Ich bin Bürgermeister Memo, ich kümmere mich um Meme City. Gebaut wird hier alles von euch über den Chat!`],

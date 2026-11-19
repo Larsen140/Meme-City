@@ -17,6 +17,10 @@ const COLORS = {
   dunkelgrün: 'green', gelb: 'yellow', orange: 'orange', lila: 'purple', pink: 'pink', rosa: 'pink',
   schwarz: 'black', weiß: 'white', weiss: 'white', grau: 'gray', braun: 'brown', magenta: 'magenta',
 };
+// Belohnungen fuers Dabeibleiben, Schreiben und den Bau-Sprint sind aus:
+// TikTok hat den Account am 18.11.2026 wegen "unechter Interaktionen" gesperrt.
+const REWARDS = false;
+
 export const PETS = {
   katze: ['cat', 'Katze'], hund: ['wolf', 'Hund'], papagei: ['parrot', 'Papagei'], fuchs: ['fox', 'Fuchs'],
   hase: ['rabbit', 'Hase'], panda: ['panda', 'Panda'], schwein: ['pig', 'Schwein'], kuh: ['cow', 'Kuh'],
@@ -187,7 +191,7 @@ export class Action {
     setInterval(() => {
       const now = Date.now();
       if (!this.duel && !this.raffle && !this.vote && now >= this.nextDuelAt) { this.nextDuelAt = now + this.duelEvery; this.startDuel(); }
-      if (!this.sprint && now >= this.nextSprintAt) { this.nextSprintAt = now + (config.sprintEveryMinutes ?? 10) * 60_000; this.startSprint(); }
+      if (REWARDS && !this.sprint && now >= this.nextSprintAt) { this.nextSprintAt = now + (config.sprintEveryMinutes ?? 10) * 60_000; this.startSprint(); }
       if (this.sprint && now >= this.sprint) this.endSprint();
       if (!this.duel && !this.raffle && !this.vote && now >= this.nextRaffleAt) { this.nextRaffleAt = now + (config.voteEveryMinutes ?? 7) * 60_000; this.startVote(); }
     }, 1000);
@@ -250,7 +254,7 @@ export class Action {
     this.markSince(p);
     this.stayCheck(p);
     // Jede Nachricht baut ein bisschen am Gemeinschaftsbau mit (pro Person hoechstens alle 15 s)
-    if (this.ready('cc:' + p.id, 15_000)) this.game.addCommunity(0.4);
+    if (REWARDS && this.ready('cc:' + p.id, 15_000)) this.game.addCommunity(0.4);
     if (this.raffle && /^(ich|dabei|bin dabei|hier|me)(\s|!|\.|$)/.test(t)) {
       if (!this.raffle.entries.has(p.id)) {
         this.raffle.entries.add(p.id);
@@ -316,7 +320,7 @@ export class Action {
     const mmss = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
     const now = Date.now();
     const next = this.sprint ? `🏗️ BAU-SPRINT x2 – ${mmss(this.sprint - now)}`
-      : [[this.nextDuelAt, '⚔️ Duell'], [this.nextRaffleAt, '🗳️ Abstimmung'], [this.nextSprintAt, '🏗️ Bau-Sprint']].sort((a, b) => a[0] - b[0]).map(([t, n]) => `${n} in ${mmss(t - now)}`)[0];
+      : [[this.nextDuelAt, '⚔️ Duell'], [this.nextRaffleAt, '🗳️ Abstimmung'], ...(REWARDS ? [[this.nextSprintAt, '🏗️ Bau-Sprint']] : [])].sort((a, b) => a[0] - b[0]).map(([t, n]) => `${n} in ${mmss(t - now)}`)[0];
     this.broadcast({ type: 'goal', name: this.goalEvent, cur: this.sessionLikes - this.goalStart, target: this.goalTarget, next });
   }
 
@@ -424,6 +428,7 @@ export class Action {
   // ---------- Dabeibleiben: nach 5 Minuten waechst das eigene Haus eine Stufe (einmal pro LIVE) ----------
 
   stayCheck(p) {
+    if (!REWARDS) return;
     if (p.plot === null || this.stayDone.has(p.id)) return;
     const now = Date.now(), mins = this.cfg.stayMinutes ?? 5;
     if (!this.seen.has(p.id)) {
@@ -485,6 +490,7 @@ export class Action {
 
   /** Overlay-Widget: Dabei-Bonus mit den treuesten Zuschauern */
   stayStats() {
+    if (!REWARDS) return;
     const now = Date.now(), win = 5 * 60_000;
     const top = [...this.since.keys()].filter((id) => now - (this.active.get(id) || 0) < win)
       .map((id) => ({ p: this.game.store.players[id], ...this.stayRate(id, now) })).filter((r) => r.p)
@@ -494,6 +500,7 @@ export class Action {
   }
 
   loyaltyBonus() {
+    if (!REWARDS) return;
     const now = Date.now(), win = 5 * 60_000;
     const lucky = [...this.active.entries()].filter(([, t]) => now - t < win).map(([id]) => this.game.store.players[id]).filter(Boolean);
     if (!lucky.length) return;
