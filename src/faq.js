@@ -26,7 +26,7 @@ export function answer(game, p, t, name) {
     // ---- persoenlich ----
     [/(welche|meine|was für eine|was fuer eine).*(stufe|level)|stufe.*(hab|bin) ich|(hab|bin) ich.*stufe|wie (weit|groß|gross) ist mein/, () => has
       ? (c.nextLevel
-        ? `${name}, du hast Stufe ${c.level}, ein ${c.levelName}. ${c.likesNeeded > 0 ? `Noch ${fmt(c.likesNeeded)} Likes bis zum ${c.nextName}!` : `Gleich kommt der ${c.nextName}!`}`
+        ? `${name}, du hast Stufe ${c.level}, ein ${c.levelName}. Als Nächstes kommt der ${c.nextName}.`
         : `${name}, du hast schon die höchste Stufe: ${c.levelName}! Respekt!`)
       : `${name}, du hast noch kein Haus. Schreib einfach Haus in den Chat!`],
     [/(welcher|mein) platz|platz.*(bin|hab) ich|(bin|hab) ich.*platz|mein rang/, () => has
@@ -39,15 +39,15 @@ export function answer(game, p, t, name) {
     [/farbe|dach|anmal|streich/, () => `Schreib zum Beispiel farbe rot, farbe blau oder farbe lila. Dann streiche ich dein Dach neu!`],
     [/haustier|tier|hund|katze|pinguin|pet/, () => `Schreib haustier und ein Tier, zum Beispiel haustier katze, hund, pinguin, löwe, drache oder faultier. Das Tier zieht in deinen Vorgarten!`],
     [/party|feier/, () => `Schreib party, dann gibt es Feuerwerk bei deinem Haus!`],
-    [/nord|süd|sued|team|duell|kampf/, () => `Alle paar Minuten kämpfen Nord gegen Süd. Schreib nord oder süd und like für dein Team. Die Gewinner bekommen Bonuspunkte!`],
+    [/nord|süd|sued|team|duell|kampf/, () => `Alle paar Minuten kämpfen Nord gegen Süd. Schreib nord oder süd in den Chat und such dir ein Team aus!`],
     [/abstimm|wählen|waehlen|voting|verlosung|was passiert (als nächstes|gleich)/, () => `Alle paar Minuten stimmt ihr ab, was passiert. Schreib dann eins, zwei oder drei. Jede Stimme gibt auch einen Punkt fürs Haus!`],
     [/befehl|was kann (man|ich)|was (geht|gibt es)|commands?/, () => `Du kannst schreiben: Haus, zeig mein Haus, farbe rot, haustier pinguin, flagge deutschland, party, nord oder süd. Probier's aus!`],
     // ---- Haus bekommen und aufsteigen ----
     [/(wie|wo).*(bekomm|krieg|kriege|hol|mach).*(\bhaus\b|grundstück|grundstueck)|haus (bekommen|kriegen|haben)|mitmachen|mitspielen|wie spielt man|wie geht (das|es)|wie funktioniert/, () =>
-      `Ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Grundstück. Mit Likes wird dein Haus Stufe für Stufe größer!`],
+      `Ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Grundstück. Das Haus wächst dann Stufe für Stufe, bis hoch zum Königspalast!`],
     [/(wie|was).*(aufsteig|steig|größer|groesser|upgrade|ausbau|level ?up|wachs|stufe (hoch|steigen))|wie viele likes|wieviel likes|likes (brauch|für|fuer)/, () => has && c.nextLevel
-      ? `${name}, ${lpp} Likes sind ein Upgrade-Punkt. Dir fehlen noch ${fmt(c.likesNeeded)} Likes bis zum ${c.nextName}.`
-      : `${lpp} Likes sind ein Upgrade-Punkt. Mit genug Punkten steigt dein Haus eine Stufe auf, bis hoch zum Königspalast!`],
+      ? `${name}, als Nächstes kommt bei dir der ${c.nextName}.`
+      : `Dein Haus steigt Stufe für Stufe auf, bis hoch zum Königspalast!`],
     [/wie viele stufen|höchste stufe|hoechste stufe|letzte stufe|max(imal)?.*stufe|königspalast|koenigspalast/, () =>
       `Es gibt ${MAX_LEVEL} Stufen: von der ${levelInfo(1).name} über Villa und Hochhaus bis zum ${levelInfo(MAX_LEVEL).name}.`],
     [/geschenk|coins?|rose|gift/, () =>

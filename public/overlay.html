@@ -552,7 +552,7 @@ function renderGifts(s) {
 let playerTimer;
 function showPlayer(c) {
   const need = c.nextLevel
-    ? `Noch <b>${fmt(c.likesNeeded)} Likes</b> bis Stufe ${c.nextLevel} · ${esc(c.nextName)}`
+    ? `Als Nächstes: Stufe ${c.nextLevel} · ${esc(c.nextName)}`
     : 'Höchste Stufe erreicht! 👑';
   $('player').innerHTML = `${ava(c.avatar)}<div class="info"><div class="nm">@${esc(c.name)}</div>
     <div class="lvl">${c.hasHouse ? `Stufe ${c.level} · ${esc(c.levelName)}` : 'Noch kein Haus – schreib „Haus“!'}</div>
@@ -635,7 +635,7 @@ function showHelp() {
     ['party', 'Feuerwerk bei dir'],
     ['nord / süd', 'Team fürs Duell'],
     ['ich', 'bei Verlosungen mitmachen'],
-    ['Like ❤️', 'Herzen über deinem Haus'],
+    ['flagge deutschland', 'Fahne im Garten'],
   ];
   $('help').innerHTML = `<div class="ptitle">💬 DAS KANNST DU IN DEN CHAT SCHREIBEN</div><div class="cmds">${cmds.map(([c, t]) => `<div class="c"><code>${c}</code><span>${t}</span></div>`).join('')}</div>`;
   $('player').classList.remove('show'); $('likestats').classList.remove('show');
@@ -702,7 +702,7 @@ const tickerDefaults = [
   ['🎨', '**farbe rot** streicht dein Dach neu'],
   ['🐶', '**haustier hund** – dein Tier zieht ein'],
   ['🎉', '**party** = Feuerwerk an deinem Haus'],
-  ['❤️', 'Jedes **Like** lässt dein Haus wachsen'],
+  ['🚩', '**flagge deutschland** – Fahne im Garten'],
   ['⚔️', 'Schreib **nord** oder **süd** fürs Team-Duell'],
   ['❓', 'Frag den Bürgermeister – er antwortet!'],
 ];

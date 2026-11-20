@@ -528,7 +528,7 @@ export class Action {
     this.broadcast({ type: 'confetti', amount: 150 });
     this.builder.enqueue({ type: 'fn', fn: () => this.runEvent(event) });
     this.pushGoal();
-    setTimeout(() => this.speech.say(`Neues Ziel: ${fmt(this.goalTarget)} Likes für ${this.goalEvent}! Los geht's!`), 9000);
+    // (keine Ansage zum naechsten Like-Ziel – das waere eine Aufforderung zum Liken)
   }
 
   async runEvent(name) {
@@ -671,8 +671,8 @@ export class Action {
     if (this.duel || this.raffle) return;
     this.game.music?.hype(true);
     this.duel = { nord: 0, sued: 0, end: Date.now() + this.duelLength, fighters: new Map(), half: false, last10: false };
-    this.speech.say('Achtung! Nord gegen Süd beginnt! Schreibt nord oder süd in den Chat und liked für euer Team!', true);
-    this.broadcast({ type: 'banner', title: '⚔️ NORD GEGEN SÜD', text: 'Schreib „nord“ oder „süd“ und like für dein Team!', big: true });
+    this.speech.say('Achtung! Nord gegen Süd beginnt! Schreibt nord oder süd in den Chat und sucht euch ein Team aus!', true);
+    this.broadcast({ type: 'banner', title: '⚔️ NORD GEGEN SÜD', text: 'Schreib „nord“ oder „süd“ in den Chat!', big: true });
     this.timer = setInterval(() => this.tickDuel(), 1000);
   }
 

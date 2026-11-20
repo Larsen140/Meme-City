@@ -19,11 +19,6 @@ export const PAGES = [
     line('party', '  Feier bei dir zu Hause'),
     line('nord / süd', '  Team fürs Duell'),
   ]),
-  comp('SO WÄCHST DEIN HAUS', '#FF6FAE', [
-    line('❤ 50 Likes', '  = 1 Punkt', '#FF6FAE'),
-    line('★ Geschenke', '  1 Münze = 1 Punkt', '#FFC93C'),
-    line('■ Jeder Punkt', '  baut am Gemeinschaftsbau mit', '#FFC93C'),
-  ]),
 ];
 const BG = [-1072558032, -1070591936, -1070587904];
 

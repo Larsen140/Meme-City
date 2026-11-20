@@ -475,8 +475,8 @@ export class Game {
       line = pick([`Tschüss ${n}, bis zum nächsten Mal!`, `Mach's gut, ${n}! Dein Haus bleibt stehen.`]);
     } else if (/(wie|was|wo|warum|wann|kann man|geht das|funktioniert)/.test(t) && /\?|wie|funktioniert/.test(t)) {
       line = p.plot === null
-        ? `${n}, ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Haus. Mit Likes wird es größer!`
-        : pick([`${n}, mit Likes wächst dein Haus. Und schreib zum Beispiel farbe rot oder haustier katze!`, `${n}, gute Frage! Schreib zeig mein Haus, party oder haustier hund, dann passiert was.`]);
+        ? `${n}, ganz einfach: Schreib Haus in den Chat, dann bekommst du ein eigenes Haus.`
+        : pick([`${n}, schreib zum Beispiel farbe rot, flagge deutschland oder haustier katze!`, `${n}, gute Frage! Schreib zeig mein Haus, party oder haustier hund, dann passiert was.`]);
     } else if (/(cool|geil|nice|krass|stark|schön|schoen|toll|lustig|lol|haha|xd|wow|mega|beste|liebe)/.test(t)) {
       line = pick([`Danke ${n}, freut mich!`, `${n} findet's gut, das freut den Bürgermeister!`, `Haha, danke ${n}!`]);
     } else if (/(langweilig|blöd|bloed|doof|schlecht|lame)/.test(t)) {
@@ -774,8 +774,7 @@ export class Game {
     if (now - (this.lastLikeThanks || 0) < 30_000 || this.speech.speaking || this.speech.queue.length) return;
     this.lastLikeThanks = now;
     const c = this.card(p), n = spoken(p);
-    const lines = [`Danke für die Likes, ${n}!`, `${n} tippt wie verrückt! Weiter so!`];
-    if (c.hasHouse && c.nextLevel) lines.push(`${n}, noch ${fmt(c.likesNeeded)} Likes und dein Haus wird zum ${c.nextName}!`);
+    const lines = [`Danke für die Likes, ${n}!`, `Danke dir, ${n}!`];
     if (!c.hasHouse) lines.push(`${n}, danke für die Likes! Schreib Haus, dann zählen sie für dein eigenes Haus.`);
     this.speech.say(pick(lines));
   }
