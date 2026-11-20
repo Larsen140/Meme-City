@@ -373,6 +373,14 @@
   @keyframes gtaVig { 0% { opacity: 0; } 10% { opacity: 1; } 82% { opacity: 1; } 100% { opacity: 0; } }
   #gta.flash::after { content: ''; position: absolute; inset: 0; background: #fff; animation: gtaFlash .4s ease-out forwards; }
   @keyframes gtaFlash { 0% { opacity: .75; } 100% { opacity: 0; } }
+  #giftlist { padding: 10px 12px; }
+  #giftlist .ptitle { font-size: 17px; font-weight: 800; color: var(--gold); letter-spacing: 1px; }
+  #giftlist .gr { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 800; margin-top: 6px; animation: grIn .5s ease; }
+  #giftlist .gr img { width: 34px; height: 34px; object-fit: contain; flex: none; }
+  #giftlist .gr .gi { width: 34px; text-align: center; font-size: 26px; flex: none; }
+  #giftlist .gr .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #giftlist .gr .ct { color: var(--gold); }
+  @keyframes grIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
   #stay { padding: 10px 12px; }
   #stay .ptitle { font-size: 17px; font-weight: 800; color: var(--mint); letter-spacing: 1px; }
   #stay .rule { font-size: 16px; color: #cfd3ff; margin: 2px 0 4px; }
@@ -445,6 +453,7 @@
   <div id="comm" class="panel"></div>
   <div id="cars" class="panel" style="display:none"></div>
   <div id="stay" class="panel" style="display:none"></div>
+  <div id="giftlist" class="panel" style="display:none"></div>
 </div>
 <div id="gifts" class="panel"></div>
 
@@ -733,6 +742,14 @@ function gtaFx(phase) {
   if (phase === 'up') { el.className = ''; void el.offsetWidth; el.className = 'go flash'; }
   else { el.classList.remove('flash'); void el.offsetWidth; el.classList.add('flash'); }
 }
+function showGiftList(items) {
+  const el = $('giftlist');
+  if (!items || !items.length) { el.style.display = 'none'; return; }
+  const icon = (g) => (g.image && /^https:/.test(g.image) ? `<img src="${esc(g.image)}" alt="">` : '<span class="gi">🎁</span>');
+  el.innerHTML = '<div class="ptitle">💛 DANKE FÜR EURE GESCHENKE</div>' +
+    items.map((g, i) => `<div class="gr" style="${i ? 'animation:none' : ''}">${icon(g)}<span class="nm">${esc(g.name)}</span>${g.count > 1 ? `<span class="ct">x${g.count}</span>` : ''}</div>`).join('');
+  el.style.display = '';
+}
 function showStay(s) {
   const el = $('stay');
   const rows = s.top.map((p) => `<div class="cr">${ava(p.avatar)}<span class="nm">@${esc(p.name)}</span><span>${p.mins}′</span><span class="pt">+${p.pts}</span></div>`).join('');
@@ -916,6 +933,7 @@ function connect() {
     else if (m.type === 'goal') showGoal(m);
     else if (m.type === 'cars') showCars(m);
     else if (m.type === 'stay') showStay(m);
+    else if (m.type === 'giftlist') showGiftList(m.items);
     else if (m.type === 'gta') gtaFx(m.phase);
     // Top-Unterstuetzer-Tafel abgeschaltet (zeigte Coins)
     else if (m.type === 'help') showHelp();

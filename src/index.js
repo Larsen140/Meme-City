@@ -108,6 +108,7 @@ wss.on('connection', (ws) => {
   ws.send(JSON.stringify({ type: 'hello', version: VERSION }));
   ws.send(JSON.stringify({ type: 'state', state: game.state() }));
   ws.send(JSON.stringify({ type: 'tiktok', status: tiktok.status }));
+  if (game.giftList?.length) ws.send(JSON.stringify({ type: 'giftlist', items: game.giftList }));
   ws.send(JSON.stringify({ type: 'mc', connected: mc.connected }));
   if (pauseState.on) ws.send(JSON.stringify({ type: 'pause', ...pauseState }));
 });
