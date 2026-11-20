@@ -380,6 +380,7 @@
   #giftlist .gr .gi { width: 34px; text-align: center; font-size: 26px; flex: none; }
   #giftlist .gr .nm { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   #giftlist .gr .ct { color: var(--gold); }
+  #giftlist .gr .gn { color: #cfd3ff; font-weight: 600; font-size: 17px; }
   @keyframes grIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: none; } }
   #stay { padding: 10px 12px; }
   #stay .ptitle { font-size: 17px; font-weight: 800; color: var(--mint); letter-spacing: 1px; }
@@ -747,7 +748,7 @@ function showGiftList(items) {
   if (!items || !items.length) { el.style.display = 'none'; return; }
   const icon = (g) => (g.image && /^https:/.test(g.image) ? `<img src="${esc(g.image)}" alt="">` : '<span class="gi">🎁</span>');
   el.innerHTML = '<div class="ptitle">💛 DANKE FÜR EURE GESCHENKE</div>' +
-    items.map((g, i) => `<div class="gr" style="${i ? 'animation:none' : ''}">${icon(g)}<span class="nm">${esc(g.name)}</span>${g.count > 1 ? `<span class="ct">x${g.count}</span>` : ''}</div>`).join('');
+    items.map((g, i) => `<div class="gr" style="${i ? 'animation:none' : ''}">${icon(g)}<span class="nm">${esc(g.name)} <span class="gn">· ${esc(g.gift)}</span></span>${g.count > 1 ? `<span class="ct">x${g.count}</span>` : ''}</div>`).join('');
   el.style.display = '';
 }
 function showStay(s) {
