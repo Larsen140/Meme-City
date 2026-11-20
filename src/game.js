@@ -512,7 +512,7 @@ export class Game {
     if (!this.speech.speaking && !this.speech.queue.length && Math.random() < 0.5) this.speech.say(pick([`Danke, ${n}!`, `${n}, du bist klasse!`, `Merci, ${n}!`]));
     // keine automatischen Effekte, die an ein Geschenk gekoppelt sind
     // Liste der letzten Geschenke im Overlay (reines Dankeschoen, keine Aufforderung)
-    this.giftList = [{ name: p.name, gift: gift.name || 'Geschenk', image: gift.image || '', count: gift.count || 1 }, ...(this.giftList || [])].slice(0, 4);
+    this.giftList = [{ name: p.name, gift: gift.name || 'Geschenk', image: gift.image || '', count: gift.count || 1 }, ...(this.giftList || [])].slice(0, 8);
     this.broadcast({ type: 'giftlist', items: this.giftList });
     this.pushState();
     this.store.save();
